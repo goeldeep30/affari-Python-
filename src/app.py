@@ -18,7 +18,7 @@ tsks = [
 
 
 class task(Resource):
-    # @jwt_required()
+    @jwt_required()
     def get(self):
         return {'tasks': tsks}, 200
 
