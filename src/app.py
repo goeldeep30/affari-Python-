@@ -16,6 +16,9 @@ tsks = [
     Task(111, 'demo1', TaskStatus.TODO.value).__dict__
 ]
 
+class home(Resource):
+    def get(self):
+        return {'message':'Welcome to Affari'},200
 
 class task(Resource):
     @jwt_required()
@@ -54,7 +57,7 @@ class task(Resource):
                 return {'message': 'Task removed'}, 202
         return {'message': 'Can not find task'}, 400
 
-
+api.add_resource(home, '/')
 api.add_resource(task, '/tasks')
 
 if __name__ == "__main__":
