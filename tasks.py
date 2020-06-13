@@ -2,6 +2,7 @@ from enum import Enum
 
 
 class TaskStatus(Enum):
+    BLOCKED = 0
     TODO = 1
     INPROGRESS = 2
     DONE = 3

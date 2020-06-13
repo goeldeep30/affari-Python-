@@ -8,7 +8,7 @@ class User(object):
         return "User(id='%s')" % self.id
 
 users = [
-    User(1, 'joe', 'pass'),
+    User(1, 'admin', 'admin'),
     User(2, 'user2', 'abcxyz'),
 ]
 
