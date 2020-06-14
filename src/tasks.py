@@ -13,7 +13,7 @@ class TaskStatus(Enum):
 
 
 class Task:
-    def __init__(self, _id: int, subj: str, status: TaskStatus):
+    def __init__(self, t_id: int, subject: str, status: TaskStatus):
         """[summary]
 
         Arguments:
@@ -21,8 +21,8 @@ class Task:
             subj {str} -- [description]
             status {TaskStatus} -- [description]
         """
-        self.id = _id
-        self.subject = subj
+        self.id = t_id
+        self.subject = subject
         self.status = status
 
     @classmethod
@@ -30,42 +30,52 @@ class Task:
         connection = sqlite3.connect('data.db')
         cursor = connection.cursor()
 
-        query = "SELECT * FROM users WHERE username=?"
-        # result = cursor.execute(query, (username,))
+        query = "SELECT * FROM tasks WHERE id=?"
+        result = cursor.execute(query, (tID,))
         row = result.fetchone()
         if row:
-            user = cls(*row)
+            task = cls(*row)
         else:
-            user = None
+            task = None
 
         connection.close()
-        return user
-
-
-tsks = [
-    Task(111, 'demo1', TaskStatus.TODO.value).__dict__
-]
-
+        return task
 
 class TaskRes(Resource):
     # @jwt_required()
     def get(self):
-        return {'tasks': tsks}, 200
+        connection = sqlite3.connect('data.db')
+        cursor = connection.cursor()
+
+        query = "SELECT * FROM tasks"
+        tasks = [Task(*res).__dict__ for res in cursor.execute(query)]
+        return {'tasks': tasks}, 200
 
     def post(self):
         data = request.get_json()
-        task = Task(**data)
-        tsks.append(task.__dict__)
-        return {'message': 'task created'}, 201
+        if Task.find_by_taskID(data['_id']):
+            return {'message':'Duplicate task'}, 400
+
+        connection = sqlite3.connect('data.db')
+        cursor = connection.cursor()
+        query = 'INSERT INTO tasks VALUES(NUll,?,?)'
+        cursor.execute(query, (data['subj'], data['status']))
+        connection.commit()
+        connection.close()
+        return {'message': 'Task Created Successfully'}, 200
 
     def put(self):
         data = request.get_json()
-        _id = data.get('_id', None)
-        status = data.get('status', None)
-        for tsk in tsks:
-            if tsk['id'] == _id:
-                tsk['status'] = status
-                return {'message': 'status updated'}, 202
+        tsk = Task.find_by_taskID(data['_id'])
+        if tsk:
+            connection = sqlite3.connect('data.db')
+            cursor = connection.cursor()
+            query = 'UPDATE tasks SET status = ? where id = ?'
+            cursor.execute(query, (data['status'], data['_id']))
+            connection.commit()
+            connection.close()
+            return {'message':'status updated successfully'}, 200
+
         return {'message': 'Can not find task'}, 400
 
     def delete(self):
@@ -75,13 +85,16 @@ class TaskRes(Resource):
                             required=True,
                             help='Need a ID in ')
         data = parser.parse_args()
+        tsk = Task.find_by_taskID(data['_id'])
+        if tsk:
+            connection = sqlite3.connect('data.db')
+            cursor = connection.cursor()
+            query = 'DELETE FROM tasks where id = ?'
+            cursor.execute(query, (data['_id'],))
+            connection.commit()
+            connection.close()
+            return {'message':'Task Deleted successfully'}, 202
 
-        # data = request.get_json()
-        _id = data.get('_id', None)
-        for tsk in tsks:
-            if tsk['id'] == _id:
-                tsks.remove(tsk)
-                return {'message': 'Task removed'}, 202
         return {'message': 'Can not find task'}, 400
 
 
