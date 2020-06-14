@@ -1,16 +1,16 @@
 import sqlite3
 
 connection = sqlite3.connect('data.db')
-create_table = "CREATE TABLE IF NOT EXISTS users (id INTEGER, username text, password text)"
+create_table = "CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, username text, password text)"
 insert_query = "INSERT INTO users VALUES (?,?,?)"
 
 cursor = connection.cursor()
 cursor.execute(create_table)
-user = (1, 'joe', 'pass')
+user = (None, 'joe', 'pass')
 cursor.execute(insert_query, user)
 users = [
-    (2, 'deep2', 'pwd'),
-    (3, 'deep3', 'pwd')
+    (None, 'deep2', 'pwd'),
+    (None, 'deep3', 'pwd')
 ]
 cursor.executemany(insert_query, users)
 
@@ -19,11 +19,11 @@ for row in cursor.execute(select_query):
     print(row)
 
 
-create_table = "CREATE TABLE IF NOT EXISTS tasks (id INTEGER, subject text, status int)"
+create_table = "CREATE TABLE IF NOT EXISTS tasks (id INTEGER PRIMARY KEY AUTOINCREMENT, subject text, status int)"
 insert_query = "INSERT INTO tasks VALUES (?,?,?)"
 tasks = [
-    (1, "demo1", 1),
-    (2, "demo2", 2)
+    (None,"demo1", 1),
+    (None,"demo2", 2)
 ]
 cursor = connection.cursor()
 cursor.execute(create_table)
