@@ -3,6 +3,7 @@ from flask_restful import Resource, Api, request, reqparse
 from tasks import Task, TaskStatus
 from flask_jwt import JWT, jwt_required
 from authenticate import authenticate, identity
+from user import UserRegisterRes
 
 import json
 
@@ -16,11 +17,11 @@ tsks = [
     Task(111, 'demo1', TaskStatus.TODO.value).__dict__
 ]
 
-class home(Resource):
+class HomeRes(Resource):
     def get(self):
         return {'message':'Welcome to Affari'},200
 
-class task(Resource):
+class TaskRes(Resource):
     @jwt_required()
     def get(self):
         return {'tasks': tsks}, 200
@@ -57,8 +58,9 @@ class task(Resource):
                 return {'message': 'Task removed'}, 202
         return {'message': 'Can not find task'}, 400
 
-api.add_resource(home, '/')
-api.add_resource(task, '/tasks')
+api.add_resource(HomeRes, '/')
+api.add_resource(TaskRes, '/tasks')
+api.add_resource(UserRegisterRes,'/register')
 
 if __name__ == "__main__":
     app.run(debug=True)
