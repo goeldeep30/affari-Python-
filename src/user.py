@@ -1,8 +1,14 @@
 import sqlite3
 from flask_restful import Resource, reqparse
+from db import db
 
 
-class User(object):
+class User(db.Model):
+    __tablename__ = 'users'
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(80))
+    password = db.Column(db.String(80))
+
     def __init__(self, id, username, password):
         self.id = id
         self.username = username
@@ -13,35 +19,39 @@ class User(object):
 
     @classmethod
     def find_by_username(cls, username):
-        connection = sqlite3.connect('data.db')
-        cursor = connection.cursor()
+        # connection = sqlite3.connect('data.db')
+        # cursor = connection.cursor()
+        # query = "SELECT * FROM users WHERE username=?"
+        # result = cursor.execute(query, (username,))
+        # row = result.fetchone()
+        # if row:
+        #     user = cls(*row)
+        # else:
+        #     user = None
 
-        query = "SELECT * FROM users WHERE username=?"
-        result = cursor.execute(query, (username,))
-        row = result.fetchone()
-        if row:
-            user = cls(*row)
-        else:
-            user = None
-
-        connection.close()
-        return user
+        # connection.close()
+        # return user
+        return cls.query.filter_by(username=username).first()
 
     @classmethod
     def find_by_id(cls, _id):
-        connection = sqlite3.connect('data.db')
-        cursor = connection.cursor()
+        # connection = sqlite3.connect('data.db')
+        # cursor = connection.cursor()
+        # query = "SELECT * FROM users WHERE id=?"
+        # result = cursor.execute(query, (_id,))
+        # row = result.fetchone()
+        # if row:
+        #     user = cls(*row)
+        # else:
+        #     user = None
 
-        query = "SELECT * FROM users WHERE id=?"
-        result = cursor.execute(query, (_id,))
-        row = result.fetchone()
-        if row:
-            user = cls(*row)
-        else:
-            user = None
+        # connection.close()
+        # return user
+        return cls.query.filter_by(id=_id).first()
 
-        connection.close()
-        return user
+    def create_user(self):
+        db.session.add(self)
+        db.commit()
 
 
 class UserRegisterRes(Resource):
@@ -62,13 +72,14 @@ class UserRegisterRes(Resource):
         data = UserRegisterRes.parser.parse_args()
         if User.find_by_username(data['username']):
             return {'message': 'user already exists'}, 400
-            
-        connection = sqlite3.connect('data.db')
-        cursor = connection.cursor()
-        query = 'INSERT INTO users VALUES(NUll,?,?)'
-        cursor.execute(query, (data['username'], data['password']))
-        connection.commit()
-        connection.close()
+
+        # connection = sqlite3.connect('data.db')
+        # cursor = connection.cursor()
+        # query = 'INSERT INTO users VALUES(NUll,?,?)'
+        # cursor.execute(query, (data['username'], data['password']))
+        # connection.commit()
+        # connection.close()
+        User(**data).create_user()
         return {'message': 'User Created Successfully'}, 200
 
 
