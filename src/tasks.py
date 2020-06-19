@@ -1,9 +1,8 @@
 from enum import Enum
+from flask import jsonify
 from flask_restful import Resource, request, reqparse
 from flask_jwt import jwt_required
 from db import db
-
-import sqlite3
 
 
 class TaskStatus(Enum):
@@ -34,20 +33,7 @@ class Task(db.Model):
     @ classmethod
     def find_by_taskID(cls, tID):
         return cls.query.filter_by(id=tID).first()
-        # connection = sqlite3.connect('data.db')
-        # cursor = connection.cursor()
-
-        # query = "SELECT * FROM tasks WHERE id=?"
-        # result = cursor.execute(query, (tID,))
-        # row = result.fetchone()
-        # if row:
-        #     task = cls(*row)
-        # else:
-        #     task = None
-
-        # connection.close()
-        # return task
-
+        
     def save_to_db(self):
         db.session.add(self)
         db.session.commit()
@@ -56,27 +42,19 @@ class Task(db.Model):
 class TaskRes(Resource):
     @ jwt_required()
     def get(self):
-        # connection = sqlite3.connect('data.db')
-        # cursor = connection.cursor()
 
-        # query = "SELECT * FROM tasks"
-        # tasks = [Task(*res).__dict__ for res in cursor.execute(query)]
-        # # return {'tasks': tasks}, 200
-        print(Task.query.filter_by().first().__dict__)
-        return {'tasks': 'Task.query.filter_by()'}, 200
+        tsks = []
+        for task in Task.query.all():
+            tsks.append(
+                {'id': task.id, 'subject': task.subject, 'status': task.status}
+            )
+        return {'tasks': tsks}, 200
 
     @ jwt_required()
     def post(self):
         data = request.get_json()
         if Task.find_by_taskID(data['t_id']):
             return {'message': 'Duplicate task'}, 400
-
-        # connection = sqlite3.connect('data.db')
-        # cursor = connection.cursor()
-        # query = 'INSERT INTO tasks VALUES(NUll,?,?)'
-        # cursor.execute(query, (data['subj'], data['status']))
-        # connection.commit()
-        # connection.close()
 
         Task(**data).save_to_db()
         return {'message': 'Task Created Successfully'}, 200
@@ -86,16 +64,13 @@ class TaskRes(Resource):
         data = request.get_json()
         tsk = Task.find_by_taskID(data['t_id'])
         if tsk:
-            # connection = sqlite3.connect('data.db')
-            # cursor = connection.cursor()
-            # query = 'UPDATE tasks SET status = ? where id = ?'
-            # cursor.execute(query, (data['status'], data['_id']))
-            # connection.commit()
-            # connection.close()
-            Task(**data).save_to_db()
+            tsk.subject = data['subject']
+            tsk.status = data['status']
+            tsk.save_to_db()
             return {'message': 'status updated successfully'}, 200
 
-        return {'message': 'Can not find task'}, 400
+        Task(**data).save_to_db()
+        return {'message': 'Task Created Successfully'}, 200
 
     @ jwt_required()
     def delete(self):
@@ -107,13 +82,8 @@ class TaskRes(Resource):
         data = parser.parse_args()
         tsk = Task.find_by_taskID(data['t_id'])
         if tsk:
-            # connection = sqlite3.connect('data.db')
-            # cursor = connection.cursor()
-            # query = 'DELETE FROM tasks where id = ?'
-            # cursor.execute(query, (data['t_id'],))
-            # connection.commit()
-            # connection.close()
-            db.session.delete(Task(**data))
+            db.session.delete(tsk)
+            db.session.commit()
             return {'message': 'Task Deleted successfully'}, 202
 
         return {'message': 'Can not find task'}, 400

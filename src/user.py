@@ -1,4 +1,3 @@
-import sqlite3
 from flask_restful import Resource, reqparse
 from db import db
 
@@ -51,7 +50,7 @@ class User(db.Model):
 
     def create_user(self):
         db.session.add(self)
-        db.commit()
+        db.session.commit()
 
 
 class UserRegisterRes(Resource):
@@ -79,6 +78,7 @@ class UserRegisterRes(Resource):
         # cursor.execute(query, (data['username'], data['password']))
         # connection.commit()
         # connection.close()
+        data['id'] = None
         User(**data).create_user()
         return {'message': 'User Created Successfully'}, 200
 
