@@ -1,5 +1,5 @@
 from flask_restful import Resource, reqparse
-from db import db
+from src.db import db
 
 
 class User(db.Model):
@@ -40,9 +40,11 @@ class UserRegisterRes(Resource):
         usrs = []
         for user in User.query.all():
             usrs.append(
-                {'id': user.id, 'subject': user.username, 'status': user.password}
+                {'id': user.id,
+                 'username': user.username,
+                 'password': user.password}
             )
-        return {'tasks': usrs}, 200
+        return {'Users': usrs}, 200
 
     def post(self):
         data = UserRegisterRes.parser.parse_args()

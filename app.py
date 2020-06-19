@@ -1,6 +1,6 @@
 from flask import Flask
 from flask_restful import Resource, Api
-from tasks import TaskRes
+from src.tasks import TaskRes
 from flask_jwt import JWT
 from src.authenticate import authenticate, identity
 from src.user import UserRegisterRes
@@ -32,4 +32,4 @@ api.add_resource(TaskRes, '/tasks')
 api.add_resource(UserRegisterRes, '/register')
 
 if __name__ == "__main__":
-    app.run(host='0.0.0.0')
+    app.run(host='0.0.0.0', debug=True)

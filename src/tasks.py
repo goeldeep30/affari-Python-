@@ -1,7 +1,7 @@
 from enum import Enum
 from flask_restful import Resource, request, reqparse
 from flask_jwt import jwt_required
-from db import db
+from src.db import db
 
 
 class TaskStatus(Enum):
@@ -32,7 +32,7 @@ class Task(db.Model):
     @ classmethod
     def find_by_taskID(cls, tID):
         return cls.query.filter_by(id=tID).first()
-        
+      
     def save_to_db(self):
         db.session.add(self)
         db.session.commit()
