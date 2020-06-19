@@ -2,9 +2,9 @@ from flask import Flask
 from flask_restful import Resource, Api
 from tasks import TaskRes
 from flask_jwt import JWT
-from authenticate import authenticate, identity
-from user import UserRegisterRes
-from db import db
+from src.authenticate import authenticate, identity
+from src.user import UserRegisterRes
+from src.db import db
 
 app = Flask(__name__)
 app.secret_key = "mySecret"
