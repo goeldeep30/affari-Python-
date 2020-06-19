@@ -1,5 +1,4 @@
 from enum import Enum
-from flask import jsonify
 from flask_restful import Resource, request, reqparse
 from flask_jwt import jwt_required
 from db import db
@@ -38,11 +37,14 @@ class Task(db.Model):
         db.session.add(self)
         db.session.commit()
 
+    def delete_task(self):
+        db.session.delete(self)
+        db.session.commit()
+
 
 class TaskRes(Resource):
     @ jwt_required()
     def get(self):
-
         tsks = []
         for task in Task.query.all():
             tsks.append(
@@ -82,8 +84,7 @@ class TaskRes(Resource):
         data = parser.parse_args()
         tsk = Task.find_by_taskID(data['t_id'])
         if tsk:
-            db.session.delete(tsk)
-            db.session.commit()
+            tsk.delete_task()
             return {'message': 'Task Deleted successfully'}, 202
 
         return {'message': 'Can not find task'}, 400

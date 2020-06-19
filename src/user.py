@@ -18,34 +18,10 @@ class User(db.Model):
 
     @classmethod
     def find_by_username(cls, username):
-        # connection = sqlite3.connect('data.db')
-        # cursor = connection.cursor()
-        # query = "SELECT * FROM users WHERE username=?"
-        # result = cursor.execute(query, (username,))
-        # row = result.fetchone()
-        # if row:
-        #     user = cls(*row)
-        # else:
-        #     user = None
-
-        # connection.close()
-        # return user
         return cls.query.filter_by(username=username).first()
 
     @classmethod
     def find_by_id(cls, _id):
-        # connection = sqlite3.connect('data.db')
-        # cursor = connection.cursor()
-        # query = "SELECT * FROM users WHERE id=?"
-        # result = cursor.execute(query, (_id,))
-        # row = result.fetchone()
-        # if row:
-        #     user = cls(*row)
-        # else:
-        #     user = None
-
-        # connection.close()
-        # return user
         return cls.query.filter_by(id=_id).first()
 
     def create_user(self):
@@ -60,33 +36,19 @@ class UserRegisterRes(Resource):
     parser.add_argument('password', type=str, required=True,
                         help='password Required')
 
-    # def get(self):
-    #     connection = sqlite3.connect('data.db')
-    #     cursor = connection.cursor()
-    #     select_query = "SELECT * FROM users"
-    #     for row in cursor.execute(select_query):
-    #         print(row)
+    def get(self):
+        usrs = []
+        for user in User.query.all():
+            usrs.append(
+                {'id': user.id, 'subject': user.username, 'status': user.password}
+            )
+        return {'tasks': usrs}, 200
 
     def post(self):
         data = UserRegisterRes.parser.parse_args()
         if User.find_by_username(data['username']):
             return {'message': 'user already exists'}, 400
 
-        # connection = sqlite3.connect('data.db')
-        # cursor = connection.cursor()
-        # query = 'INSERT INTO users VALUES(NUll,?,?)'
-        # cursor.execute(query, (data['username'], data['password']))
-        # connection.commit()
-        # connection.close()
         data['id'] = None
         User(**data).create_user()
         return {'message': 'User Created Successfully'}, 200
-
-
-# users = [
-#     User(1, 'joe', 'pass'),
-#     User(2, 'user2', 'abcxyz'),
-# ]
-
-# username_table = {u.username: u for u in users}
-# userid_table = {u.id: u for u in users}
