@@ -3,8 +3,10 @@ from src.db import db
 
 
 class Team(db.Model):
+    __tablename__ = 'teams'
     id = db.Column(db.Integer, primary_key=True)
     team_name = db.Column(db.String(80))
+    user = db.relationship("User", lazy='dynamic')
 
     def __init__(self, id: int, team_name: str):
         self.id = id
@@ -33,7 +35,8 @@ class TeamRes(Resource):
         for team in Team.query.all():
             teams.append(
                 {'id': team.id,
-                 'team_name': team.team_name
+                 'team_name': team.team_name,
+                 'members': [usr.username for usr in team.user.all()]
                  }
             )
         return {'Teams': teams}, 200
@@ -51,6 +54,6 @@ class TeamRes(Resource):
         team = Team.find_by_team_name(data['team_name'])
         if team:
             team.delete_team()
-            return {'message': 'User deleted successfully'}, 200
+            return {'message': 'Team deleted successfully'}, 200
 
         return {'message': 'Invalid Details'}, 404

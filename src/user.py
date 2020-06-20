@@ -7,11 +7,14 @@ class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True)
     password = db.Column(db.String(80))
+    team_id = db.Column(db.Integer, db.ForeignKey('teams.id'))
+    team = db.relationship("Team")
 
-    def __init__(self, id, username, password):
+    def __init__(self, id, username, password, team_id):
         self.id = id
         self.username = username
         self.password = password
+        self.team_id = team_id
 
     def __str__(self):
         return f"User(id='{self.id}')"
@@ -39,6 +42,8 @@ class UserRegisterRes(Resource):
                         help='Username Required')
     parser.add_argument('password', type=str, required=True,
                         help='Password Required')
+    parser.add_argument('team_id', type=int, required=True,
+                        help='Team ID Required')
 
     def get(self):
         usrs = []
@@ -46,7 +51,8 @@ class UserRegisterRes(Resource):
             usrs.append(
                 {'id': user.id,
                  'username': user.username,
-                 'password': user.password}
+                 'password': user.password,
+                 'team_id': user.team_id}
             )
         return {'Users': usrs}, 200
 
@@ -62,8 +68,8 @@ class UserRegisterRes(Resource):
         data = UserRegisterRes.parser.parse_args()
         usr = User.find_by_username(data['username'])
         if usr:
-            usr.username = data['username']
-            usr.password = data['password']
+            for key, value in data.items():
+                setattr(usr, key, value)
             usr.create_update_user()
             return {'message': 'user updated successfully'}, 200
 
