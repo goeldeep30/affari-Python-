@@ -1,9 +1,10 @@
 from flask import Flask
 from flask_restful import Resource, Api
-from src.tasks import TaskRes
 from flask_jwt import JWT
 from src.authenticate import authenticate, identity
 from src.user import UserRegisterRes
+from src.tasks import TaskRes
+from src.teams import TeamRes
 from src.db import db
 
 app = Flask(__name__)
@@ -30,6 +31,7 @@ class HomeRes(Resource):
 api.add_resource(HomeRes, '/')
 api.add_resource(TaskRes, '/tasks')
 api.add_resource(UserRegisterRes, '/register')
+api.add_resource(TeamRes, '/teams')
 
 if __name__ == "__main__":
     app.run(debug=True)
