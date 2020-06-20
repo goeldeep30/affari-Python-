@@ -32,4 +32,4 @@ api.add_resource(TaskRes, '/tasks')
 api.add_resource(UserRegisterRes, '/register')
 
 if __name__ == "__main__":
-    app.run(host='0.0.0.0', debug=True)
+    app.run(debug=True)
