@@ -73,8 +73,8 @@ class UserRegisterRes(Resource):
     def delete(self):
         data = UserRegisterRes.parser.parse_args()
         usr = User.find_by_username(data['username'])
-        if usr:
+        if usr and usr.password == data['password']:
             usr.delete_user()
             return {'message': 'User deleted successfully'}, 200
 
-        return {'message': 'User not found'}, 404
+        return {'message': 'Invalid credentials'}, 404
