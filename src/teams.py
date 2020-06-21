@@ -24,6 +24,12 @@ class Team(db.Model):
         db.session.delete(self)
         db.session.commit()
 
+    def json(self):
+        return {'id': self.id,
+                'team_name': self.team_name,
+                'members': [usr.json() for usr in self.user.all()]
+                }
+
 
 class TeamRes(Resource):
     parser = reqparse.RequestParser()
@@ -34,10 +40,7 @@ class TeamRes(Resource):
         teams = []
         for team in Team.query.all():
             teams.append(
-                {'id': team.id,
-                 'team_name': team.team_name,
-                 'members': [usr.username for usr in team.user.all()]
-                 }
+                team.json()
             )
         return {'Teams': teams}, 200
 

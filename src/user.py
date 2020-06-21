@@ -1,4 +1,5 @@
 from flask_restful import Resource, reqparse
+from flask_jwt_extended import create_access_token, create_refresh_token
 from src.db import db
 
 
@@ -35,6 +36,13 @@ class User(db.Model):
         db.session.delete(self)
         db.session.commit()
 
+    def json(self):
+        return {'id': self.id,
+                'username': self.username,
+                'password': self.password,
+                'team_id': self.team_id
+                }
+
 
 class UserRegisterRes(Resource):
     parser = reqparse.RequestParser()
@@ -49,10 +57,7 @@ class UserRegisterRes(Resource):
         usrs = []
         for user in User.query.all():
             usrs.append(
-                {'id': user.id,
-                 'username': user.username,
-                 'password': user.password,
-                 'team_id': user.team_id}
+                user.json()
             )
         return {'Users': usrs}, 200
 
@@ -84,3 +89,23 @@ class UserRegisterRes(Resource):
             return {'message': 'User deleted successfully'}, 200
 
         return {'message': 'Invalid credentials'}, 404
+
+
+class UserLogin(Resource):
+    parser = reqparse.RequestParser()
+    parser.add_argument('username', type=str, required=True,
+                        help='Username Required')
+    parser.add_argument('password', type=str, required=True,
+                        help='Password Required')
+
+    def post(self):
+        data = UserLogin.parser.parse_args()
+        usr = User.find_by_username(data['username'])
+        if usr and usr.password == data['password']:
+            access_token = create_access_token(identity=usr.id, fresh=True)
+            refresh_token = create_refresh_token(usr.id)
+            return{
+                'access_token': access_token,
+                'refresh_token': refresh_token
+            }, 200
+        return {'message': 'Invalid credentials'}, 401

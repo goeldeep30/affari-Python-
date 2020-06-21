@@ -1,6 +1,6 @@
 from enum import Enum
 from flask_restful import Resource, reqparse
-from flask_jwt import jwt_required
+from flask_jwt_extended import jwt_required
 from src.db import db
 
 
@@ -41,6 +41,12 @@ class Task(db.Model):
         db.session.delete(self)
         db.session.commit()
 
+    def json(self):
+        return {'id': self.id,
+                'subject': self.subject,
+                'status': self.status
+                }
+
 
 class TaskRes(Resource):
     parser = reqparse.RequestParser()
@@ -51,18 +57,16 @@ class TaskRes(Resource):
     parser.add_argument('status', type=str, required=True,
                         help='Status Required')
 
-    @ jwt_required()
+    @ jwt_required
     def get(self):
         tsks = []
         for task in Task.query.all():
             tsks.append(
-                {'id': task.id,
-                 'subject': task.subject,
-                 'status': task.status}
+                task.json()
             )
         return {'tasks': tsks}, 200
 
-    @ jwt_required()
+    @ jwt_required
     def post(self):
         data = TaskRes.parser.parse_args()
         if Task.find_by_taskID(data['id']):
@@ -71,7 +75,7 @@ class TaskRes(Resource):
         Task(**data).save_to_db()
         return {'message': 'Task sreated successfully'}, 200
 
-    @ jwt_required()
+    @ jwt_required
     def put(self):
         data = TaskRes.parser.parse_args()
         tsk = Task.find_by_taskID(data['id'])
@@ -84,7 +88,7 @@ class TaskRes(Resource):
         Task(**data).save_to_db()
         return {'message': 'Task created cuccessfully'}, 200
 
-    @ jwt_required()
+    @ jwt_required
     def delete(self):
         parser = reqparse.RequestParser()
         parser.add_argument('id', type=str, required=True,

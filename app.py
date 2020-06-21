@@ -1,8 +1,8 @@
 from flask import Flask
 from flask_restful import Resource, Api
-from flask_jwt import JWT
-from src.authenticate import authenticate, identity
-from src.user import UserRegisterRes
+from flask_jwt_extended import JWTManager
+# from src.authenticate import authenticate, identity
+from src.user import UserRegisterRes, UserLogin
 from src.tasks import TaskRes
 from src.teams import TeamRes
 from src.db import db
@@ -10,6 +10,7 @@ from src.db import db
 app = Flask(__name__)
 app.secret_key = "mySecret"
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['PROPAGATE_EXCEPTIONS'] = True
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///data.db'
 api = Api(app)
 db.init_app(app)
@@ -20,7 +21,7 @@ def create_db():
     db.create_all()
 
 
-jwt = JWT(app, authenticate, identity)
+jwt = JWTManager(app)
 
 
 class HomeRes(Resource):
@@ -31,6 +32,7 @@ class HomeRes(Resource):
 api.add_resource(HomeRes, '/')
 api.add_resource(TaskRes, '/tasks')
 api.add_resource(UserRegisterRes, '/register')
+api.add_resource(UserLogin, '/login')
 api.add_resource(TeamRes, '/teams')
 
 if __name__ == "__main__":
