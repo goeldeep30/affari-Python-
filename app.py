@@ -2,7 +2,7 @@ from flask import Flask
 from flask_restful import Resource, Api
 from flask_jwt_extended import JWTManager
 # from src.authenticate import authenticate, identity
-from src.user import UserRegisterRes, UserLogin
+from src.user import UserRegisterRes, UserLoginRes, User
 from src.tasks import TaskRes
 from src.teams import TeamRes
 from src.db import db
@@ -24,6 +24,14 @@ def create_db():
 jwt = JWTManager(app)
 
 
+@jwt.user_claims_loader
+def add_claims_to_jwt(identity):
+    claims = {}
+    claims['admin'] = User.find_by_id(identity).is_user_admin()
+    print(claims)
+    return claims
+
+
 class HomeRes(Resource):
     def get(self):
         return {'message': 'Welcome to Affari'}, 200
@@ -32,7 +40,7 @@ class HomeRes(Resource):
 api.add_resource(HomeRes, '/')
 api.add_resource(TaskRes, '/tasks')
 api.add_resource(UserRegisterRes, '/register')
-api.add_resource(UserLogin, '/login')
+api.add_resource(UserLoginRes, '/login')
 api.add_resource(TeamRes, '/teams')
 
 if __name__ == "__main__":
