@@ -1,4 +1,5 @@
 from flask_restful import Resource, reqparse
+from flask_jwt_extended import jwt_optional, get_jwt_identity
 from src.db import db
 
 
@@ -36,13 +37,24 @@ class TeamRes(Resource):
     parser.add_argument('team_name', type=str, required=True,
                         help='Team Name Required')
 
+    @jwt_optional
     def get(self):
+        user = get_jwt_identity()
         teams = []
+        resp = {}
+        if not user:
+            for team in Team.query.all():
+                teams.append(
+                    team.team_name()
+                )
+                resp['message': 'Login for more details']
+
         for team in Team.query.all():
             teams.append(
                 team.json()
             )
-        return {'Teams': teams}, 200
+        resp['Teams'] = teams
+        return resp, 200
 
     def post(self):
         data = TeamRes.parser.parse_args()
