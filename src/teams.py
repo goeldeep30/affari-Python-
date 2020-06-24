@@ -40,35 +40,38 @@ class TeamRes(Resource):
     @jwt_optional
     def get(self):
         user = get_jwt_identity()
+        print(user)
         teams = []
         resp = {}
         if not user:
             for team in Team.query.all():
                 teams.append(
-                    team.team_name()
+                    team.team_name
+                    # team.json()
                 )
-                resp['message': 'Login for more details']
+                resp['msg'] = 'Login for more details'
+        else:
+            for team in Team.query.all():
+                teams.append(
+                    team.json()
+                )
 
-        for team in Team.query.all():
-            teams.append(
-                team.json()
-            )
         resp['Teams'] = teams
         return resp, 200
 
     def post(self):
         data = TeamRes.parser.parse_args()
         if Team.find_by_team_name(data['team_name']):
-            return {'message': 'Team already exists'}, 400
+            return {'msg': 'Team already exists'}, 400
 
         Team(id=None, **data).create_team()
-        return {'message': 'Team created successfully'}, 200
+        return {'msg': 'Team created successfully'}, 200
 
     def delete(self):
         data = TeamRes.parser.parse_args()
         team = Team.find_by_team_name(data['team_name'])
         if team:
             team.delete_team()
-            return {'message': 'Team deleted successfully'}, 200
+            return {'msg': 'Team deleted successfully'}, 200
 
-        return {'message': 'Invalid Details'}, 404
+        return {'msg': 'Invalid Details'}, 404

@@ -1,6 +1,7 @@
-from flask_restful import Resource, reqparse
-from flask_jwt_extended import create_access_token, create_refresh_token
 from src.db import db
+from flask_restful import Resource, reqparse
+from flask_jwt_extended import (create_access_token, create_refresh_token,
+                                jwt_required, get_jwt_claims)
 
 
 class User(db.Model):
@@ -10,12 +11,14 @@ class User(db.Model):
     password = db.Column(db.String(80))
     team_id = db.Column(db.Integer, db.ForeignKey('teams.id'))
     team = db.relationship("Team")
+    access_level = db.Column(db.Integer)
 
-    def __init__(self, id, username, password, team_id):
+    def __init__(self, id, username, password, team_id, access_level):
         self.id = id
         self.username = username
         self.password = password
         self.team_id = team_id
+        self.access_level = access_level
 
     def __str__(self):
         return f"User(id='{self.id}')"
@@ -39,9 +42,18 @@ class User(db.Model):
     def json(self):
         return {'id': self.id,
                 'username': self.username,
-                'password': self.password,
-                'team_id': self.team_id
+                # 'password': self.password,
+                'team_id': self.team_id,
+                'access_level': self.access_level
                 }
+
+    def is_user_admin(self):
+        """
+        0 -> Admin
+        """
+        if self.access_level <= 0:
+            return True
+        return False
 
 
 class UserRegisterRes(Resource):
@@ -52,6 +64,8 @@ class UserRegisterRes(Resource):
                         help='Password Required')
     parser.add_argument('team_id', type=int, required=True,
                         help='Team ID Required')
+    parser.add_argument('access_level', type=int, required=True,
+                        help='Access level Required')
 
     def get(self):
         usrs = []
@@ -64,10 +78,10 @@ class UserRegisterRes(Resource):
     def post(self):
         data = UserRegisterRes.parser.parse_args()
         if User.find_by_username(data['username']):
-            return {'message': 'User already exists'}, 400
+            return {'msg': 'User already exists'}, 400
 
         User(id=None, **data).create_update_user()
-        return {'message': 'User created successfully'}, 200
+        return {'msg': 'User created successfully'}, 200
 
     def put(self):
         data = UserRegisterRes.parser.parse_args()
@@ -76,22 +90,31 @@ class UserRegisterRes(Resource):
             for key, value in data.items():
                 setattr(usr, key, value)
             usr.create_update_user()
-            return {'message': 'user updated successfully'}, 200
+            return {'msg': 'user updated successfully'}, 200
 
         User(id=None, **data).create_update_user()
-        return {'message': 'User Created Successfully'}, 200
+        return {'msg': 'User Created Successfully'}, 200
 
+    @jwt_required
     def delete(self):
-        data = UserRegisterRes.parser.parse_args()
+        claims = get_jwt_claims()
+        if not claims['admin']:
+            print(claims)
+            return {'msg': 'Admin rights needed'}, 401
+
+        parser = reqparse.RequestParser()
+        parser.add_argument('username', type=str, required=True,
+                            help='Username Required')
+        data = parser.parse_args()
         usr = User.find_by_username(data['username'])
-        if usr and usr.password == data['password']:
+        if usr:
             usr.delete_user()
-            return {'message': 'User deleted successfully'}, 200
+            return {'msg': 'User deleted successfully'}, 200
 
-        return {'message': 'Invalid credentials'}, 404
+        return {'msg': 'Invalid user'}, 404
 
 
-class UserLogin(Resource):
+class UserLoginRes(Resource):
     parser = reqparse.RequestParser()
     parser.add_argument('username', type=str, required=True,
                         help='Username Required')
@@ -99,13 +122,14 @@ class UserLogin(Resource):
                         help='Password Required')
 
     def post(self):
-        data = UserLogin.parser.parse_args()
+        data = UserLoginRes.parser.parse_args()
         usr = User.find_by_username(data['username'])
         if usr and usr.password == data['password']:
             access_token = create_access_token(identity=usr.id, fresh=True)
             refresh_token = create_refresh_token(usr.id)
             return{
                 'access_token': access_token,
-                'refresh_token': refresh_token
+                'refresh_token': refresh_token,
+                'username': usr.username
             }, 200
-        return {'message': 'Invalid credentials'}, 401
+        return {'msg': 'Invalid credentials'}, 401

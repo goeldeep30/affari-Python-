@@ -34,7 +34,7 @@ def add_claims_to_jwt(identity):
 
 class HomeRes(Resource):
     def get(self):
-        return {'message': 'Welcome to Affari'}, 200
+        return {'msg': 'Welcome to Affari'}, 200
 
 
 api.add_resource(HomeRes, '/')

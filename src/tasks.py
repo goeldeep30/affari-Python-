@@ -70,10 +70,10 @@ class TaskRes(Resource):
     def post(self):
         data = TaskRes.parser.parse_args()
         if Task.find_by_taskID(data['id']):
-            return {'message': 'Duplicate task'}, 400
+            return {'msg': 'Duplicate task'}, 400
 
         Task(**data).save_to_db()
-        return {'message': 'Task sreated successfully'}, 200
+        return {'msg': 'Task created successfully'}, 200
 
     @ jwt_required
     def put(self):
@@ -83,10 +83,10 @@ class TaskRes(Resource):
             tsk.subject = data['subject']
             tsk.status = data['status']
             tsk.save_to_db()
-            return {'message': 'Status updated successfully'}, 200
+            return {'msg': 'Status updated successfully'}, 200
 
         Task(**data).save_to_db()
-        return {'message': 'Task created cuccessfully'}, 200
+        return {'msg': 'Task created successfully'}, 200
 
     @ jwt_required
     def delete(self):
@@ -97,9 +97,9 @@ class TaskRes(Resource):
         tsk = Task.find_by_taskID(data['id'])
         if tsk:
             tsk.delete_task()
-            return {'message': 'Task deleted successfully'}, 202
+            return {'msg': 'Task deleted successfully'}, 202
 
-        return {'message': 'Task not found'}, 404
+        return {'msg': 'Task not found'}, 404
 
 
 if __name__ == "__main__":
