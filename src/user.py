@@ -1,7 +1,7 @@
 from src.db import db
 from flask_restful import Resource, reqparse
 from flask_jwt_extended import (create_access_token, create_refresh_token,
-                                jwt_required, get_jwt_claims,
+                                fresh_jwt_required, get_jwt_claims,
                                 jwt_refresh_token_required,
                                 get_jwt_identity)
 
@@ -97,7 +97,7 @@ class UserRegisterRes(Resource):
         User(id=None, **data).create_update_user()
         return {'msg': 'User Created Successfully'}, 200
 
-    @jwt_required
+    @fresh_jwt_required
     def delete(self):
         claims = get_jwt_claims()
         if not claims['admin']:
