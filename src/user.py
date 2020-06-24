@@ -1,7 +1,9 @@
 from src.db import db
 from flask_restful import Resource, reqparse
 from flask_jwt_extended import (create_access_token, create_refresh_token,
-                                jwt_required, get_jwt_claims)
+                                jwt_required, get_jwt_claims,
+                                jwt_refresh_token_required,
+                                get_jwt_identity)
 
 
 class User(db.Model):
@@ -99,7 +101,6 @@ class UserRegisterRes(Resource):
     def delete(self):
         claims = get_jwt_claims()
         if not claims['admin']:
-            print(claims)
             return {'msg': 'Admin rights needed'}, 401
 
         parser = reqparse.RequestParser()
@@ -133,3 +134,14 @@ class UserLoginRes(Resource):
                 'username': usr.username
             }, 200
         return {'msg': 'Invalid credentials'}, 401
+
+
+class TokenRefresh(Resource):
+
+    @jwt_refresh_token_required
+    def post(self):
+        current_user = get_jwt_identity()
+        new_token = create_access_token(identity=current_user, fresh=False)
+        return{
+            'access_token': new_token,
+        }, 200

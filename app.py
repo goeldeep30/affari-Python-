@@ -2,7 +2,7 @@ from flask import Flask
 from flask_restful import Resource, Api
 from flask_jwt_extended import JWTManager
 # from src.authenticate import authenticate, identity
-from src.user import UserRegisterRes, UserLoginRes, User
+from src.user import UserRegisterRes, UserLoginRes, TokenRefresh, User
 from src.tasks import TaskRes
 from src.teams import TeamRes
 from src.db import db
@@ -28,7 +28,6 @@ jwt = JWTManager(app)
 def add_claims_to_jwt(identity):
     claims = {}
     claims['admin'] = User.find_by_id(identity).is_user_admin()
-    print(claims)
     return claims
 
 
@@ -42,6 +41,7 @@ api.add_resource(TaskRes, '/tasks')
 api.add_resource(UserRegisterRes, '/register')
 api.add_resource(UserLoginRes, '/login')
 api.add_resource(TeamRes, '/teams')
+api.add_resource(TokenRefresh, '/refresh')
 
 if __name__ == "__main__":
     app.run(debug=True)
