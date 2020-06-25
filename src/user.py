@@ -1,9 +1,11 @@
+from blacklist import BLACKLIST
 from src.db import db
+from datetime import timedelta
 from flask_restful import Resource, reqparse
 from flask_jwt_extended import (create_access_token, create_refresh_token,
                                 fresh_jwt_required, get_jwt_claims,
-                                jwt_refresh_token_required,
-                                get_jwt_identity)
+                                get_jwt_identity, jwt_required,
+                                get_raw_jwt, jwt_refresh_token_required)
 
 
 class User(db.Model):
@@ -126,7 +128,9 @@ class UserLoginRes(Resource):
         data = UserLoginRes.parser.parse_args()
         usr = User.find_by_username(data['username'])
         if usr and usr.password == data['password']:
-            access_token = create_access_token(identity=usr.id, fresh=True)
+            expires = timedelta(minutes=10)
+            access_token = create_access_token(
+                identity=usr.id, fresh=True, expires_delta=expires)
             refresh_token = create_refresh_token(usr.id)
             return{
                 'access_token': access_token,
@@ -136,12 +140,24 @@ class UserLoginRes(Resource):
         return {'msg': 'Invalid credentials'}, 401
 
 
+class UserLogout(Resource):
+
+    @jwt_required
+    def delete(self):
+        print(get_raw_jwt()['jti'])
+        BLACKLIST.add(get_raw_jwt()['jti'])
+        return {'msg': 'User logged out successfuilly'}, 200
+
+
 class TokenRefresh(Resource):
 
     @jwt_refresh_token_required
     def post(self):
+
         current_user = get_jwt_identity()
-        new_token = create_access_token(identity=current_user, fresh=False)
+        expires = timedelta(minutes=10)
+        new_token = create_access_token(
+            identity=current_user, fresh=False, expires_delta=expires)
         return{
             'access_token': new_token,
         }, 200

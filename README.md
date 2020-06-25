@@ -14,5 +14,5 @@ Can be used to create KAN-BAN board
 ## Installation / Running
 ```
 pip install -r requirements.txt
-python app.py
+gunicorn app:app
 ```
