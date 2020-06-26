@@ -3,4 +3,10 @@ class AccessLevel:
     ADMIN = 1
     MANAGER = 2
     USER = 3
-    
+
+
+class TaskStatus:
+    BLOCKED = 0
+    TODO = 1
+    INPROGRESS = 2
+    DONE = 3

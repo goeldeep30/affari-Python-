@@ -1,5 +1,7 @@
 from flask_restful import Resource, reqparse
-from flask_jwt_extended import jwt_optional, get_jwt_identity
+from flask_jwt_extended import (jwt_optional, get_jwt_identity,
+                                jwt_refresh_token_required, jwt_required,
+                                get_jwt_claims)
 from src.db import db
 
 
@@ -59,7 +61,12 @@ class TeamRes(Resource):
         resp['Teams'] = teams
         return resp, 200
 
+    @jwt_required
     def post(self):
+        claims = get_jwt_claims()
+        if not claims['manager']:
+            return {'msg': 'Manager rights needed'}, 401
+
         data = TeamRes.parser.parse_args()
         if Team.find_by_team_name(data['team_name']):
             return {'msg': 'Team already exists'}, 400
@@ -67,6 +74,7 @@ class TeamRes(Resource):
         Team(id=None, **data).create_team()
         return {'msg': 'Team created successfully'}, 200
 
+    @jwt_refresh_token_required
     def delete(self):
         data = TeamRes.parser.parse_args()
         team = Team.find_by_team_name(data['team_name'])

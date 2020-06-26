@@ -1,14 +1,7 @@
-from enum import Enum
 from flask_restful import Resource, reqparse
 from flask_jwt_extended import jwt_required
+from src.utility import TaskStatus
 from src.db import db
-
-
-class TaskStatus(Enum):
-    BLOCKED = 0
-    TODO = 1
-    INPROGRESS = 2
-    DONE = 3
 
 
 class Task(db.Model):
@@ -100,10 +93,3 @@ class TaskRes(Resource):
             return {'msg': 'Task deleted successfully'}, 202
 
         return {'msg': 'Task not found'}, 404
-
-
-if __name__ == "__main__":
-    import pdb
-    pdb.set_trace()
-    t = Task(111, 'demo', TaskStatus.TODO.value)
-    print(t)

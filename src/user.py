@@ -72,6 +72,11 @@ class User(db.Model):
             return True
         return False
 
+    def is_user_manager(self):
+        if self.access_level <= AccessLevel.MANAGER:
+            return True
+        return False
+
 
 class UserRegisterRes(Resource):
     parser = reqparse.RequestParser()
@@ -84,7 +89,12 @@ class UserRegisterRes(Resource):
     parser.add_argument('access_level', type=int, required=True,
                         help='Access level Required')
 
+    @jwt_required
     def get(self):
+        claims = get_jwt_claims()
+        if not claims['admin']:
+            return {'msg': 'Admin rights needed'}, 401
+
         usrs = []
         for user in User.query.all():
             usrs.append(
@@ -100,6 +110,7 @@ class UserRegisterRes(Resource):
         User(id=None, **data).create_update_user()
         return {'msg': 'User created successfully'}, 200
 
+    @jwt_required
     def put(self):
         data = UserRegisterRes.parser.parse_args()
         usr = User.find_by_username(data['username'])
@@ -109,8 +120,10 @@ class UserRegisterRes(Resource):
             usr.create_update_user()
             return {'msg': 'user updated successfully'}, 200
 
-        User(id=None, **data).create_update_user()
-        return {'msg': 'User Created Successfully'}, 200
+        # User(id=None, **data).create_update_user()
+        # return {'msg': 'User Created Successfully'}, 200
+
+        return {'msg': 'No such user found'}, 400
 
     @fresh_jwt_required
     def delete(self):
