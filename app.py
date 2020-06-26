@@ -22,6 +22,7 @@ db.init_app(app)
 @app.before_first_request
 def create_db():
     db.create_all()
+    User('deep', 'admin', 0, None).make_dev_user()
 
 
 jwt = JWTManager(app)
@@ -84,7 +85,7 @@ def revoked_token_callback():
 
 class HomeRes(Resource):
     def get(self):
-        return {'msg': 'Welcome to Affari'}, 200
+        return {'msg': 'Affari is up and running'}, 200
 
 
 api.add_resource(HomeRes, '/')
