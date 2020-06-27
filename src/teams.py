@@ -1,6 +1,6 @@
 from flask_restful import Resource, reqparse
 from flask_jwt_extended import (jwt_optional, get_jwt_identity,
-                                jwt_refresh_token_required, jwt_required,
+                                fresh_jwt_required, jwt_required,
                                 get_jwt_claims)
 from src.db import db
 
@@ -9,7 +9,7 @@ class Team(db.Model):
     __tablename__ = 'teams'
     id = db.Column(db.Integer, primary_key=True)
     team_name = db.Column(db.String(80))
-    user = db.relationship("User", lazy='dynamic')
+    # user = db.relationship("User", lazy='dynamic')
 
     def __init__(self, id: int, team_name: str):
         self.id = id
@@ -30,7 +30,7 @@ class Team(db.Model):
     def json(self):
         return {'id': self.id,
                 'team_name': self.team_name,
-                'members': [usr.json() for usr in self.user.all()]
+                # 'members': [usr.json() for usr in self.user.all()]
                 }
 
 
@@ -74,12 +74,16 @@ class TeamRes(Resource):
         Team(id=None, **data).create_team()
         return {'msg': 'Team created successfully'}, 200
 
-    @jwt_refresh_token_required
+    @fresh_jwt_required
     def delete(self):
+        claims = get_jwt_claims()
+        if not claims['admin']:
+            return {'msg': 'Admin rights needed'}, 401
+
         data = TeamRes.parser.parse_args()
         team = Team.find_by_team_name(data['team_name'])
         if team:
             team.delete_team()
             return {'msg': 'Team deleted successfully'}, 200
 
-        return {'msg': 'Invalid Details'}, 404
+        return {'msg': 'No such team found'}, 404

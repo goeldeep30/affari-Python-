@@ -16,3 +16,8 @@ Can be used to create KAN-BAN board
 pip install -r requirements.txt
 gunicorn app:app
 ```
+
+## Postman Collection for dev
+```
+https://www.getpostman.com/collections/7f0eeed25577b97578cc
+```

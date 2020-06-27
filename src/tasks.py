@@ -10,7 +10,7 @@ class Task(db.Model):
     subject = db.Column(db.String(80))
     status = db.Column(db.Integer)
 
-    def __init__(self, id: int, subject: str, status: TaskStatus):
+    def __init__(self, subject: str, status: TaskStatus, id: int = None):
         """[summary]
 
         Arguments:
@@ -43,14 +43,12 @@ class Task(db.Model):
 
 class TaskRes(Resource):
     parser = reqparse.RequestParser()
-    parser.add_argument('id', type=str, required=True,
-                        help='ID Required')
     parser.add_argument('subject', type=str, required=True,
                         help='Subject Required')
     parser.add_argument('status', type=str, required=True,
                         help='Status Required')
 
-    @ jwt_required
+    @jwt_required
     def get(self):
         tsks = []
         for task in Task.query.all():
@@ -59,18 +57,22 @@ class TaskRes(Resource):
             )
         return {'tasks': tsks}, 200
 
-    @ jwt_required
+    @jwt_required
     def post(self):
         data = TaskRes.parser.parse_args()
-        if Task.find_by_taskID(data['id']):
-            return {'msg': 'Duplicate task'}, 400
+        # if Task.find_by_taskID(data['id']):
+        #     return {'msg': 'Duplicate task'}, 400
 
         Task(**data).save_to_db()
         return {'msg': 'Task created successfully'}, 200
 
-    @ jwt_required
+    @jwt_required
     def put(self):
+        TaskRes.parser.add_argument('id', type=str, required=True,
+                                    help='ID Required')
         data = TaskRes.parser.parse_args()
+        TaskRes.parser.remove_argument('id')
+        
         tsk = Task.find_by_taskID(data['id'])
         if tsk:
             tsk.subject = data['subject']
@@ -78,10 +80,11 @@ class TaskRes(Resource):
             tsk.save_to_db()
             return {'msg': 'Status updated successfully'}, 200
 
-        Task(**data).save_to_db()
-        return {'msg': 'Task created successfully'}, 200
+        # Task(**data).save_to_db()
+        # return {'msg': 'Task created successfully'}, 200
+        return {'msg': 'No such task found'}, 404
 
-    @ jwt_required
+    @jwt_required
     def delete(self):
         parser = reqparse.RequestParser()
         parser.add_argument('id', type=str, required=True,
