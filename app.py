@@ -2,11 +2,20 @@ from flask import Flask
 from flask_restful import Resource, Api
 from flask_jwt_extended import JWTManager
 from blacklist import BLACKLIST
+import logging
 from src.user import (UserRegisterRes, UserLoginRes,
                       UserLogout, TokenRefresh, User)
 from src.tasks import TaskRes
 from src.teams import TeamRes
 from src.db import db
+
+
+logging.basicConfig(
+    filename='trace.log',
+    level=logging.DEBUG,
+    format='%(created)f:%(levelname)s:%(message)s'
+)
+
 
 app = Flask(__name__)
 app.secret_key = "mySecret"

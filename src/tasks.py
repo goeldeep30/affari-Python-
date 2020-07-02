@@ -72,7 +72,7 @@ class TaskRes(Resource):
                                     help='ID Required')
         data = TaskRes.parser.parse_args()
         TaskRes.parser.remove_argument('id')
-        
+
         tsk = Task.find_by_taskID(data['id'])
         if tsk:
             tsk.subject = data['subject']
