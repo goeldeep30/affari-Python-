@@ -48,14 +48,38 @@ class TaskRes(Resource):
     parser.add_argument('status', type=str, required=True,
                         help='Status Required')
 
-    @jwt_required
+    # @jwt_required
     def get(self):
+        resp = {}
         tsks = []
-        for task in Task.query.all():
+        for task in Task.query.filter_by(status=TaskStatus.BLOCKED):
             tsks.append(
                 task.json()
             )
-        return {'tasks': tsks}, 200
+        resp['blocked'] = tsks
+
+        tsks = []
+        for task in Task.query.filter_by(status=TaskStatus.TODO):
+            tsks.append(
+                task.json()
+            )
+        resp['to_do'] = tsks
+
+        tsks = []
+        for task in Task.query.filter_by(status=TaskStatus.INPROGRESS):
+            tsks.append(
+                task.json()
+            )
+        resp['in_progress'] = tsks
+
+        tsks = []
+        for task in Task.query.filter_by(status=TaskStatus.DONE):
+            tsks.append(
+                task.json()
+            )
+
+        resp['done'] = tsks
+        return resp, 200
 
     @jwt_required
     def post(self):

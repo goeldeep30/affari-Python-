@@ -14,16 +14,16 @@ class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True)
     password = db.Column(db.String(80))
-    team_id = db.Column(db.Integer, db.ForeignKey('teams.id'))
-    team = db.relationship("Team")
     access_level = db.Column(db.Integer)
+    project_id = db.Column(db.Integer, db.ForeignKey('projects.id'))
+    project = db.relationship("Project")
 
-    def __init__(self, username: str, password: str, team_id: int,
+    def __init__(self, username: str, password: str, project_id: int,
                  access_level: int, id: int = None):
         self.id = id
         self.username = username
         self.password = password
-        self.team_id = team_id
+        self.project_id = project_id
         self.access_level = access_level
 
     def __str__(self):
@@ -63,8 +63,8 @@ class User(db.Model):
         return {'id': self.id,
                 'username': self.username,
                 # 'password': self.password,
-                'team_id': self.team_id,
-                'access_level': self.access_level
+                'project_id': self.project_id,
+                'access_level': self.access_level,
                 }
 
     def is_user_admin(self):
@@ -84,8 +84,8 @@ class UserRegisterRes(Resource):
                         help='Username Required')
     parser.add_argument('password', type=str, required=True,
                         help='Password Required')
-    parser.add_argument('team_id', type=int, required=True,
-                        help='Team ID Required')
+    parser.add_argument('project_id', type=int, required=True,
+                        help='Project ID Required')
     parser.add_argument('access_level', type=int, required=True,
                         help='Access level Required')
 

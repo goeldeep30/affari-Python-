@@ -2,19 +2,19 @@ from flask import Flask
 from flask_restful import Resource, Api
 from flask_jwt_extended import JWTManager
 from blacklist import BLACKLIST
-import logging
+
 from src.user import (UserRegisterRes, UserLoginRes,
                       UserLogout, TokenRefresh, User)
 from src.tasks import TaskRes
-from src.teams import TeamRes
+from src.projects import ProjectRes
 from src.db import db
 
-
-logging.basicConfig(
-    filename='trace.log',
-    level=logging.DEBUG,
-    format='%(created)f:%(levelname)s:%(message)s'
-)
+# import logging
+# logging.basicConfig(
+#     filename='trace.log',
+#     level=logging.DEBUG,
+#     format='%(created)f:%(levelname)s:%(message)s'
+# )
 
 
 app = Flask(__name__)
@@ -31,7 +31,7 @@ db.init_app(app)
 @app.before_first_request
 def create_db():
     db.create_all()
-    User('deep', 'admin', 0, None).make_dev_user()
+    # User('deep', 'admin', 0, None).make_dev_user()
 
 
 jwt = JWTManager(app)
@@ -103,7 +103,7 @@ api.add_resource(TaskRes, '/tasks')
 api.add_resource(UserRegisterRes, '/register')
 api.add_resource(UserLoginRes, '/login')
 api.add_resource(UserLogout, '/logout')
-api.add_resource(TeamRes, '/teams')
+api.add_resource(ProjectRes, '/projects')
 api.add_resource(TokenRefresh, '/refresh')
 
 if __name__ == "__main__":
