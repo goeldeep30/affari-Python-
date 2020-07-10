@@ -48,7 +48,8 @@ class User(db.Model):
             if obj.access_level <= AccessLevel.DEVELOPER:
                 obj.access_level = AccessLevel.ADMIN
             return func(obj)
-            # BUG: If developer tries to update user detais, It won't have developer rights after that
+            # BUG: If developer tries to update user detais,
+            # It won't have developer rights after that
         return create_user
 
     @block_dev_user_creation

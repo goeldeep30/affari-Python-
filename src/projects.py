@@ -9,11 +9,18 @@ class Project(db.Model):
     __tablename__ = 'projects'
     id = db.Column(db.Integer, primary_key=True)
     project_name = db.Column(db.String(80))
+    project_desc = db.Column(db.String(80))
     task = db.relationship("Task", lazy='dynamic')
 
-    def __init__(self, id: int, project_name: str):
+    def __init__(self, id: int, project_name: str,
+                 project_desc: str):
         self.id = id
         self.project_name = project_name
+        self.project_desc = project_desc
+
+    @classmethod
+    def find_by_project_id(cls, project_id):
+        return cls.query.filter_by(id=project_id).first()
 
     @classmethod
     def find_by_project_name(cls, project_name):
@@ -30,7 +37,8 @@ class Project(db.Model):
     def json(self):
         return {'id': self.id,
                 'project_name': self.project_name,
-                'task': [tsk.json() for tsk in self.task.all()]
+                'project_desc': self.project_desc,
+                # 'task': [tsk.json() for tsk in self.task.all()]
                 }
 
 
@@ -38,6 +46,8 @@ class ProjectRes(Resource):
     parser = reqparse.RequestParser()
     parser.add_argument('project_name', type=str, required=True,
                         help='Project Name Required')
+    parser.add_argument('project_desc', type=str, required=True,
+                        help='Project Description Required')
 
     @jwt_optional
     def get(self):
@@ -80,8 +90,12 @@ class ProjectRes(Resource):
         if not claims['admin']:
             return {'msg': 'Admin rights needed'}, 401
 
-        data = ProjectRes.parser.parse_args()
-        project = Project.find_by_project_name(data['project_name'])
+        parser = reqparse.RequestParser()
+        parser.add_argument('id', type=str, required=True,
+                            help='Project ID Required')
+        data = parser.parse_args()
+
+        project = Project.find_by_project_id(data['id'])
         if project:
             project.delete_project()
             return {'msg': 'Project deleted successfully'}, 200
