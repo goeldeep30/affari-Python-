@@ -9,18 +9,25 @@ class Task(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     subject = db.Column(db.String(80))
     status = db.Column(db.Integer)
+    project_id = db.Column(db.Integer, db.ForeignKey('projects.id'))
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
 
-    def __init__(self, subject: str, status: TaskStatus, id: int = None):
+    def __init__(self, subject: str, status: TaskStatus,
+                 project_id: int, user_id: int, id: int = None):
         """[summary]
 
-        Arguments:
-            _id {int} -- [description]
-            subj {str} -- [description]
-            status {TaskStatus} -- [description]
+        Args:
+            subject (str): [description]
+            status (TaskStatus): [description]
+            project_id (int): [description]
+            user_id (int): [description]
+            id (int, optional): [description]. Defaults to None.
         """
         self.id = id
         self.subject = subject
         self.status = status
+        self.project_id = project_id
+        self.user_id = user_id
 
     @ classmethod
     def find_by_taskID(cls, tID):
@@ -37,7 +44,9 @@ class Task(db.Model):
     def json(self):
         return {'id': self.id,
                 'subject': self.subject,
-                'status': self.status
+                'status': self.status,
+                'project_id': self.project_id,
+                'user_id': self.user_id,
                 }
 
 
@@ -47,6 +56,10 @@ class TaskRes(Resource):
                         help='Subject Required')
     parser.add_argument('status', type=str, required=True,
                         help='Status Required')
+    parser.add_argument('project_id', type=int, required=True,
+                        help='Project ID Required')
+    parser.add_argument('user_id', type=int, required=True,
+                        help='User ID Required')
 
     # @jwt_required
     def get(self):

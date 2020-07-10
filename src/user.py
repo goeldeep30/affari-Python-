@@ -15,15 +15,15 @@ class User(db.Model):
     username = db.Column(db.String(80), unique=True)
     password = db.Column(db.String(80))
     access_level = db.Column(db.Integer)
-    project_id = db.Column(db.Integer, db.ForeignKey('projects.id'))
-    project = db.relationship("Project")
+    task = db.relationship("Task", lazy='dynamic')
 
-    def __init__(self, username: str, password: str, project_id: int,
+    # project = db.relationship("Project")
+
+    def __init__(self, username: str, password: str,
                  access_level: int, id: int = None):
         self.id = id
         self.username = username
         self.password = password
-        self.project_id = project_id
         self.access_level = access_level
 
     def __str__(self):
@@ -48,6 +48,7 @@ class User(db.Model):
             if obj.access_level <= AccessLevel.DEVELOPER:
                 obj.access_level = AccessLevel.ADMIN
             return func(obj)
+            # BUG: If developer tries to update user detais, It won't have developer rights after that
         return create_user
 
     @block_dev_user_creation
@@ -63,8 +64,8 @@ class User(db.Model):
         return {'id': self.id,
                 'username': self.username,
                 # 'password': self.password,
-                'project_id': self.project_id,
                 'access_level': self.access_level,
+                # 'task': [tsk.json() for tsk in self.task.all()]
                 }
 
     def is_user_admin(self):
@@ -84,8 +85,8 @@ class UserRegisterRes(Resource):
                         help='Username Required')
     parser.add_argument('password', type=str, required=True,
                         help='Password Required')
-    parser.add_argument('project_id', type=int, required=True,
-                        help='Project ID Required')
+    # parser.add_argument('project_id', type=int, required=True,
+    #                     help='Project ID Required')
     parser.add_argument('access_level', type=int, required=True,
                         help='Access level Required')
 

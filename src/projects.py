@@ -9,7 +9,7 @@ class Project(db.Model):
     __tablename__ = 'projects'
     id = db.Column(db.Integer, primary_key=True)
     project_name = db.Column(db.String(80))
-    user = db.relationship("User", backref='projects', lazy='dynamic')
+    task = db.relationship("Task", lazy='dynamic')
 
     def __init__(self, id: int, project_name: str):
         self.id = id
@@ -30,7 +30,7 @@ class Project(db.Model):
     def json(self):
         return {'id': self.id,
                 'project_name': self.project_name,
-                # 'members': [usr.json() for usr in self.user.all()]
+                'task': [tsk.json() for tsk in self.task.all()]
                 }
 
 
