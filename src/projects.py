@@ -53,8 +53,8 @@ class Project(db.Model):
                 'project_name': self.project_name,
                 'project_desc': self.project_desc,
                 # 'owner': self.owner,
-                'member': [usr.json() for usr in self.member],
-                'task': [tsk.json() for tsk in self.task.all()]
+                # 'member': [usr.json() for usr in self.member],
+                # 'task': [tsk.json() for tsk in self.task.all()]
                 }
 
 
@@ -79,7 +79,9 @@ class ProjectRes(Resource):
         #         )
         #         resp['msg'] = 'Login for more details'
         # else:
-        for project in Project.query.all():
+        # print(User.query.filter_by(id=user).first().curr_projects.all())
+        for project in User.query.filter_by(id=user)\
+                .first().curr_projects.all():
             projects.append(
                 project.json()
             )

@@ -63,13 +63,18 @@ class TaskRes(Resource):
 
     @jwt_required
     def get(self):
+        parser = reqparse.RequestParser()
+        parser.add_argument('project_id', type=int, required=True,
+                            help='Project ID Required')
+        data = parser.parse_args()
         current_user = get_jwt_identity()
         print(current_user)
-        # shared_filter = {}
+        shared_filter = {'user_id': current_user,
+                         'project_id': data['project_id']}
         resp = {}
         tsks = []
         for task in Task.query.filter_by(status=TaskStatus.BLOCKED,
-                                         user_id=current_user):
+                                         **shared_filter):
             tsks.append(
                 task.json()
             )
@@ -77,7 +82,7 @@ class TaskRes(Resource):
 
         tsks = []
         for task in Task.query.filter_by(status=TaskStatus.TODO,
-                                         user_id=current_user):
+                                         **shared_filter):
             tsks.append(
                 task.json()
             )
@@ -85,7 +90,7 @@ class TaskRes(Resource):
 
         tsks = []
         for task in Task.query.filter_by(status=TaskStatus.INPROGRESS,
-                                         user_id=current_user):
+                                         **shared_filter):
             tsks.append(
                 task.json()
             )
@@ -93,7 +98,7 @@ class TaskRes(Resource):
 
         tsks = []
         for task in Task.query.filter_by(status=TaskStatus.DONE,
-                                         user_id=current_user):
+                                         **shared_filter):
             tsks.append(
                 task.json()
             )
@@ -117,7 +122,7 @@ class TaskRes(Resource):
         data = TaskRes.parser.parse_args()
         TaskRes.parser.remove_argument('id')
 
-        tsk = Task.find_by_taskID(data['id'])
+        tsk = Task.find_by_taskID(data['user_id'])
         if tsk:
             tsk.subject = data['subject']
             tsk.status = data['status']
