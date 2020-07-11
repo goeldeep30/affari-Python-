@@ -2,7 +2,15 @@ from flask_restful import Resource, reqparse
 from flask_jwt_extended import (jwt_optional, get_jwt_identity,
                                 fresh_jwt_required, jwt_required,
                                 get_jwt_claims)
+from src.user import User
 from src.db import db
+
+proj_allocation = db.Table('proj_allocation',
+                           db.Column('user_id', db.Integer,
+                                     db.ForeignKey('users.id')),
+                           db.Column('project_id', db.Integer,
+                                     db.ForeignKey('projects.id')),
+                           )
 
 
 class Project(db.Model):
@@ -10,13 +18,19 @@ class Project(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     project_name = db.Column(db.String(80))
     project_desc = db.Column(db.String(80))
+    # owner = db.Column(db.Integer, db.ForeignKey('users.id'))
     task = db.relationship("Task", lazy='dynamic')
+    member = db.relationship("User", secondary=proj_allocation,
+                             backref=db.backref('curr_projects',
+                                                lazy='dynamic')
+                             )
 
     def __init__(self, id: int, project_name: str,
-                 project_desc: str):
+                 project_desc: str, owner: int):
         self.id = id
         self.project_name = project_name
         self.project_desc = project_desc
+        # self.owner = owner
 
     @classmethod
     def find_by_project_id(cls, project_id):
@@ -38,7 +52,9 @@ class Project(db.Model):
         return {'id': self.id,
                 'project_name': self.project_name,
                 'project_desc': self.project_desc,
-                # 'task': [tsk.json() for tsk in self.task.all()]
+                # 'owner': self.owner,
+                'member': [usr.json() for usr in self.member],
+                'task': [tsk.json() for tsk in self.task.all()]
                 }
 
 
@@ -55,24 +71,25 @@ class ProjectRes(Resource):
         print(user)
         projects = []
         resp = {}
-        if not user:
-            for project in Project.query.all():
-                projects.append(
-                    project.project_name
-                    # project.json()
-                )
-                resp['msg'] = 'Login for more details'
-        else:
-            for project in Project.query.all():
-                projects.append(
-                    project.json()
-                )
+        # if not user:
+        #     for project in Project.query.all():
+        #         projects.append(
+        #             project.project_name
+        #             # project.json()
+        #         )
+        #         resp['msg'] = 'Login for more details'
+        # else:
+        for project in Project.query.all():
+            projects.append(
+                project.json()
+            )
 
         resp['Projects'] = projects
         return resp, 200
 
     @jwt_required
     def post(self):
+        user = get_jwt_identity()
         claims = get_jwt_claims()
         if not claims['manager']:
             return {'msg': 'Manager rights needed'}, 401
@@ -81,7 +98,11 @@ class ProjectRes(Resource):
         if Project.find_by_project_name(data['project_name']):
             return {'msg': 'Project already exists'}, 400
 
-        Project(id=None, **data).create_project()
+        proj = Project(id=None, **data, owner=user)
+        # print(User.find_by_id(user))
+        proj.member.append(User.find_by_id(user))
+        proj.create_project()
+
         return {'msg': 'Project created successfully'}, 200
 
     @fresh_jwt_required
@@ -101,3 +122,31 @@ class ProjectRes(Resource):
             return {'msg': 'Project deleted successfully'}, 200
 
         return {'msg': 'No such project found'}, 404
+
+
+class ProjectAllocate(Resource):
+    parser = reqparse.RequestParser()
+    parser.add_argument('project_id', type=str, required=True,
+                        help='Project ID Required')
+    parser.add_argument('user_id', type=str, required=True,
+                        help='User ID Required')
+
+    @jwt_required
+    def post(self):
+        # user = get_jwt_identity()
+        # claims = get_jwt_claims()
+        # if not claims['manager']:
+        #     return {'msg': 'Manager rights needed'}, 401
+
+        data = ProjectAllocate.parser.parse_args()
+        proj = Project.find_by_project_id(data['project_id'])
+        if proj:
+            # print(proj.json())
+            # print(User.find_by_id(data['user_id']))
+            proj.member.append(User.find_by_id(data['user_id']))
+            proj.create_project()
+            print(proj.member)
+            return {'msg': 'Member added to project'}, 200
+
+        # Project(id=None, **data, owner=user).create_project()
+        return {'msg': 'Project not found'}, 404

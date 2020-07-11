@@ -16,6 +16,9 @@ class User(db.Model):
     password = db.Column(db.String(80))
     access_level = db.Column(db.Integer)
     task = db.relationship("Task", lazy='dynamic')
+    # projects = db.relationship("Project", lazy='dynamic')
+    # curr_projects = db.relationship("Project", secondary=proj_allocation,
+    #                          backref='member', lazy='dynamic')
 
     # project = db.relationship("Project")
 
@@ -66,7 +69,13 @@ class User(db.Model):
                 'username': self.username,
                 # 'password': self.password,
                 'access_level': self.access_level,
-                # 'task': [tsk.json() for tsk in self.task.all()]
+                # 'task': [tsk.json() for tsk in self.task.all()],
+                # 'projects': [
+                #     project.json() for project in self.projects.all()
+                # ],
+                # 'curr_projects': [
+                #     proj.json() for proj in self.curr_projects
+                # ],
                 }
 
     def is_user_admin(self):
