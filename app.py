@@ -40,6 +40,7 @@ jwt = JWTManager(app)
 @jwt.user_claims_loader
 def add_claims_to_jwt(identity):
     claims = {}
+    # claims['logged_in_user_id'] = identity
     claims['admin'] = User.find_by_id(identity).is_user_admin()
     claims['manager'] = User.find_by_id(identity).is_user_manager()
     return claims

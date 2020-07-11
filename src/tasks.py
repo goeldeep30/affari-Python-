@@ -1,5 +1,5 @@
 from flask_restful import Resource, reqparse
-from flask_jwt_extended import jwt_required
+from flask_jwt_extended import jwt_required, get_jwt_identity
 from src.utility import TaskStatus
 from src.db import db
 
@@ -61,32 +61,39 @@ class TaskRes(Resource):
     parser.add_argument('user_id', type=int, required=True,
                         help='User ID Required')
 
-    # @jwt_required
+    @jwt_required
     def get(self):
+        current_user = get_jwt_identity()
+        print(current_user)
+        # shared_filter = {}
         resp = {}
         tsks = []
-        for task in Task.query.filter_by(status=TaskStatus.BLOCKED):
+        for task in Task.query.filter_by(status=TaskStatus.BLOCKED,
+                                         user_id=current_user):
             tsks.append(
                 task.json()
             )
         resp['blocked'] = tsks
 
         tsks = []
-        for task in Task.query.filter_by(status=TaskStatus.TODO):
+        for task in Task.query.filter_by(status=TaskStatus.TODO,
+                                         user_id=current_user):
             tsks.append(
                 task.json()
             )
         resp['to_do'] = tsks
 
         tsks = []
-        for task in Task.query.filter_by(status=TaskStatus.INPROGRESS):
+        for task in Task.query.filter_by(status=TaskStatus.INPROGRESS,
+                                         user_id=current_user):
             tsks.append(
                 task.json()
             )
         resp['in_progress'] = tsks
 
         tsks = []
-        for task in Task.query.filter_by(status=TaskStatus.DONE):
+        for task in Task.query.filter_by(status=TaskStatus.DONE,
+                                         user_id=current_user):
             tsks.append(
                 task.json()
             )
