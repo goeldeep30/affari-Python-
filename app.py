@@ -1,5 +1,6 @@
 from flask import Flask
 from flask_restful import Resource, Api
+from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 from blacklist import BLACKLIST
 
@@ -18,6 +19,7 @@ from src.db import db
 
 
 app = Flask(__name__)
+CORS(app)
 app.secret_key = "mySecret"
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['PROPAGATE_EXCEPTIONS'] = True
