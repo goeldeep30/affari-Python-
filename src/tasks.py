@@ -1,33 +1,35 @@
-from enum import Enum
 from flask_restful import Resource, reqparse
-from flask_jwt import jwt_required
+from flask_jwt_extended import jwt_required, get_jwt_identity
+from src.utility import TaskStatus
 from src.db import db
-
-
-class TaskStatus(Enum):
-    BLOCKED = 0
-    TODO = 1
-    INPROGRESS = 2
-    DONE = 3
 
 
 class Task(db.Model):
     __tablename__ = 'tasks'
     id = db.Column(db.Integer, primary_key=True)
     subject = db.Column(db.String(80))
+    description = db.Column(db.String(500))
     status = db.Column(db.Integer)
+    project_id = db.Column(db.Integer, db.ForeignKey('projects.id'))
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
 
-    def __init__(self, id: int, subject: str, status: TaskStatus):
+    def __init__(self, subject: str, description: str, status: TaskStatus,
+                 project_id: int, user_id: int, id: int = None):
         """[summary]
 
-        Arguments:
-            _id {int} -- [description]
-            subj {str} -- [description]
-            status {TaskStatus} -- [description]
+        Args:
+            subject (str): [description]
+            status (TaskStatus): [description]
+            project_id (int): [description]
+            user_id (int): [description]
+            id (int, optional): [description]. Defaults to None.
         """
         self.id = id
         self.subject = subject
         self.status = status
+        self.description = description
+        self.project_id = project_id
+        self.user_id = user_id
 
     @ classmethod
     def find_by_taskID(cls, tID):
@@ -41,50 +43,103 @@ class Task(db.Model):
         db.session.delete(self)
         db.session.commit()
 
+    def json(self):
+        return {'id': self.id,
+                'subject': self.subject,
+                'description': self.description,
+                'status': self.status,
+                'project_id': self.project_id,
+                'user_id': self.user_id,
+                }
+
 
 class TaskRes(Resource):
     parser = reqparse.RequestParser()
-    parser.add_argument('id', type=str, required=True,
-                        help='ID Required')
     parser.add_argument('subject', type=str, required=True,
                         help='Subject Required')
+    parser.add_argument('description', type=str, required=True,
+                        help='Task description Required')
     parser.add_argument('status', type=str, required=True,
                         help='Status Required')
+    parser.add_argument('project_id', type=int, required=True,
+                        help='Project ID Required')
+    parser.add_argument('user_id', type=int, required=True,
+                        help='User ID Required')
 
-    @ jwt_required()
+    @jwt_required
     def get(self):
+        parser = reqparse.RequestParser()
+        parser.add_argument('project_id', type=int, required=True,
+                            help='Project ID Required')
+        data = parser.parse_args()
+        current_user = get_jwt_identity()
+        print(current_user)
+        shared_filter = {'user_id': current_user,
+                         'project_id': data['project_id']}
+        resp = {}
         tsks = []
-        for task in Task.query.all():
+        for task in Task.query.filter_by(status=TaskStatus.BLOCKED,
+                                         **shared_filter):
             tsks.append(
-                {'id': task.id,
-                 'subject': task.subject,
-                 'status': task.status}
+                task.json()
             )
-        return {'tasks': tsks}, 200
+        resp['blocked'] = tsks
 
-    @ jwt_required()
+        tsks = []
+        for task in Task.query.filter_by(status=TaskStatus.TODO,
+                                         **shared_filter):
+            tsks.append(
+                task.json()
+            )
+        resp['to_do'] = tsks
+
+        tsks = []
+        for task in Task.query.filter_by(status=TaskStatus.INPROGRESS,
+                                         **shared_filter):
+            tsks.append(
+                task.json()
+            )
+        resp['in_progress'] = tsks
+
+        tsks = []
+        for task in Task.query.filter_by(status=TaskStatus.DONE,
+                                         **shared_filter):
+            tsks.append(
+                task.json()
+            )
+
+        resp['done'] = tsks
+        return resp, 200
+
+    @jwt_required
     def post(self):
         data = TaskRes.parser.parse_args()
-        if Task.find_by_taskID(data['id']):
-            return {'message': 'Duplicate task'}, 400
+        # if Task.find_by_taskID(data['id']):
+        #     return {'msg': 'Duplicate task'}, 400
 
         Task(**data).save_to_db()
-        return {'message': 'Task sreated successfully'}, 200
+        return {'msg': 'Task created successfully'}, 200
 
-    @ jwt_required()
+    @jwt_required
     def put(self):
+        TaskRes.parser.add_argument('id', type=str, required=True,
+                                    help='ID Required')
         data = TaskRes.parser.parse_args()
-        tsk = Task.find_by_taskID(data['id'])
+        TaskRes.parser.remove_argument('id')
+
+        tsk = Task.find_by_taskID(data['user_id'])
         if tsk:
             tsk.subject = data['subject']
+            tsk.description = data['description']
             tsk.status = data['status']
             tsk.save_to_db()
-            return {'message': 'Status updated successfully'}, 200
+            return {'msg': 'Status updated successfully'}, 200
 
-        Task(**data).save_to_db()
-        return {'message': 'Task created cuccessfully'}, 200
+        # Task(**data).save_to_db()
+        # return {'msg': 'Task created successfully'}, 200
+        return {'msg': 'No such task found'}, 404
 
-    @ jwt_required()
+    @jwt_required
     def delete(self):
         parser = reqparse.RequestParser()
         parser.add_argument('id', type=str, required=True,
@@ -93,13 +148,6 @@ class TaskRes(Resource):
         tsk = Task.find_by_taskID(data['id'])
         if tsk:
             tsk.delete_task()
-            return {'message': 'Task deleted successfully'}, 202
+            return {'msg': 'Task deleted successfully'}, 202
 
-        return {'message': 'Task not found'}, 404
-
-
-if __name__ == "__main__":
-    import pdb
-    pdb.set_trace()
-    t = Task(111, 'demo', TaskStatus.TODO.value)
-    print(t)
+        return {'msg': 'Task not found'}, 404
