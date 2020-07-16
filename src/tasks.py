@@ -127,7 +127,7 @@ class TaskRes(Resource):
         data = TaskRes.parser.parse_args()
         TaskRes.parser.remove_argument('id')
 
-        tsk = Task.find_by_taskID(data['user_id'])
+        tsk = Task.find_by_taskID(data['id'])
         if tsk:
             tsk.subject = data['subject']
             tsk.description = data['description']
