@@ -8,11 +8,12 @@ class Task(db.Model):
     __tablename__ = 'tasks'
     id = db.Column(db.Integer, primary_key=True)
     subject = db.Column(db.String(80))
+    description = db.Column(db.String(500))
     status = db.Column(db.Integer)
     project_id = db.Column(db.Integer, db.ForeignKey('projects.id'))
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
 
-    def __init__(self, subject: str, status: TaskStatus,
+    def __init__(self, subject: str, description: str, status: TaskStatus,
                  project_id: int, user_id: int, id: int = None):
         """[summary]
 
@@ -26,6 +27,7 @@ class Task(db.Model):
         self.id = id
         self.subject = subject
         self.status = status
+        self.description = description
         self.project_id = project_id
         self.user_id = user_id
 
@@ -44,6 +46,7 @@ class Task(db.Model):
     def json(self):
         return {'id': self.id,
                 'subject': self.subject,
+                'description': self.description,
                 'status': self.status,
                 'project_id': self.project_id,
                 'user_id': self.user_id,
@@ -54,6 +57,8 @@ class TaskRes(Resource):
     parser = reqparse.RequestParser()
     parser.add_argument('subject', type=str, required=True,
                         help='Subject Required')
+    parser.add_argument('description', type=str, required=True,
+                        help='Task description Required')
     parser.add_argument('status', type=str, required=True,
                         help='Status Required')
     parser.add_argument('project_id', type=int, required=True,
@@ -125,6 +130,7 @@ class TaskRes(Resource):
         tsk = Task.find_by_taskID(data['user_id'])
         if tsk:
             tsk.subject = data['subject']
+            tsk.description = data['description']
             tsk.status = data['status']
             tsk.save_to_db()
             return {'msg': 'Status updated successfully'}, 200

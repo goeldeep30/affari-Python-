@@ -65,18 +65,19 @@ class User(db.Model):
         db.session.commit()
 
     def json(self):
-        return {'id': self.id,
-                'username': self.username,
-                # 'password': self.password,
-                'access_level': self.access_level,
-                # 'task': [tsk.json() for tsk in self.task.all()],
-                # 'projects': [
-                #     project.json() for project in self.projects.all()
-                # ],
-                # 'curr_projects': [
-                #     proj.json() for proj in self.curr_projects
-                # ],
-                }
+        return {
+            'id': self.id,
+            'username': self.username,
+            # 'password': self.password,
+            'access_level': self.access_level,
+            # 'task': [tsk.json() for tsk in self.task.all()],
+            # 'projects': [
+            #     project.json() for project in self.projects.all()
+            # ],
+            'curr_projects': [
+                proj.json() for proj in self.curr_projects
+            ],
+        }
 
     def is_user_admin(self):
         if self.access_level <= AccessLevel.ADMIN:
@@ -87,6 +88,13 @@ class User(db.Model):
         if self.access_level <= AccessLevel.MANAGER:
             return True
         return False
+
+    def projects(self):
+        return {
+            'curr_projects': [
+                proj.json() for proj in self.curr_projects
+            ],
+        }
 
 
 class UserRegisterRes(Resource):
