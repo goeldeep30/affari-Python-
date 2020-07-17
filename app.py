@@ -7,7 +7,7 @@ from blacklist import BLACKLIST
 from src.user import (UserRegisterRes, UserLoginRes,
                       UserLogout, TokenRefresh, User)
 from src.tasks import TaskRes
-from src.projects import ProjectRes, ProjectAllocate
+from src.projects import ProjectRes, ProjectAllocate, ProjectMembers
 from src.db import db
 
 # import logging
@@ -108,6 +108,7 @@ api.add_resource(UserLoginRes, '/login')
 api.add_resource(UserLogout, '/logout')
 api.add_resource(ProjectRes, '/projects')
 api.add_resource(ProjectAllocate, '/assignmember')
+api.add_resource(ProjectMembers, '/project_members/<int:project_id>')
 api.add_resource(TokenRefresh, '/refresh')
 
 if __name__ == "__main__":

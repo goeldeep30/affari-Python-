@@ -16,9 +16,8 @@ class User(db.Model):
     password = db.Column(db.String(80))
     access_level = db.Column(db.Integer)
     task = db.relationship("Task", lazy='dynamic')
-    # projects = db.relationship("Project", lazy='dynamic')
     # curr_projects = db.relationship("Project", secondary=proj_allocation,
-    #                          backref='member', lazy='dynamic')
+    #                          backref='members', lazy='dynamic')
 
     # project = db.relationship("Project")
 
@@ -47,12 +46,11 @@ class User(db.Model):
 
     def block_dev_user_creation(func):
         def create_user(obj):
-            print(obj.access_level)
             if obj.access_level <= AccessLevel.DEVELOPER:
                 obj.access_level = AccessLevel.ADMIN
             return func(obj)
-            # BUG: If developer tries to update user detais,
-            # It won't have developer rights after that
+            # BUG: If developer tries to update its user detais,
+            # It won't have developer any more rights after that
         return create_user
 
     @block_dev_user_creation
@@ -77,6 +75,12 @@ class User(db.Model):
             'curr_projects': [
                 proj.json() for proj in self.curr_projects
             ],
+        }
+
+    def basicDetails(self):
+        return {
+            'id': self.id,
+            'username': self.username,
         }
 
     def is_user_admin(self):
@@ -189,7 +193,6 @@ class UserLogout(Resource):
 
     @jwt_required
     def delete(self):
-        print(get_raw_jwt()['jti'])
         BLACKLIST.add(get_raw_jwt()['jti'])
         return {'msg': 'User logged out successfuilly'}, 200
 
