@@ -73,7 +73,6 @@ class TaskRes(Resource):
                             help='Project ID Required')
         data = parser.parse_args()
         current_user = get_jwt_identity()
-        print(current_user)
         shared_filter = {'user_id': current_user,
                          'project_id': data['project_id']}
         resp = {}
