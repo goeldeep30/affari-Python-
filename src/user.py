@@ -100,6 +100,11 @@ class User(db.Model):
             ],
         }
 
+    def has_project(self, project):
+        if project in self.curr_projects:
+            return True
+        return False
+
 
 class UserRegisterRes(Resource):
     parser = reqparse.RequestParser()
