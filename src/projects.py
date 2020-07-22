@@ -5,6 +5,7 @@ from flask_jwt_extended import (jwt_optional, get_jwt_identity,
 from src.user import User
 from src.db import db
 
+
 proj_allocation = db.Table('proj_allocation',
                            db.Column('user_id', db.Integer,
                                      db.ForeignKey('users.id')),
@@ -26,7 +27,7 @@ class Project(db.Model):
                               )
 
     def __init__(self, id: int, project_name: str,
-                 project_desc: str, owner: int):
+                 project_desc: str, owner: int, **kwargs):
         self.id = id
         self.project_name = project_name
         self.project_desc = project_desc
@@ -69,6 +70,8 @@ class ProjectRes(Resource):
                         help='Project Name Required')
     parser.add_argument('project_desc', type=str, required=True,
                         help='Project Description Required')
+    parser.add_argument('project_members', type=dict, required=True,
+                        action="append", help='Project Members are Required')
 
     @jwt_optional
     def get(self):
@@ -95,20 +98,28 @@ class ProjectRes(Resource):
     @jwt_required
     def post(self):
         user = get_jwt_identity()
-        claims = get_jwt_claims()
-        if not claims['manager']:
-            return {'msg': 'Manager rights needed'}, 401
+        # claims = get_jwt_claims()
+        # if not claims['manager']:
+        #     return {'msg': 'Manager rights needed'}, 401
 
         data = ProjectRes.parser.parse_args()
+        print(data['project_members'])
         if Project.find_by_project_name(data['project_name']):
             return {'msg': 'Project already exists'}, 400
 
         proj = Project(id=None, **data, owner=user)
-        # print(User.find_by_id(user))
         proj.members.append(User.find_by_id(user))
+        err = []
+        resp = {'msg': 'Project created successfully', 'err': err}
+        for member in data['project_members']:
+            mem = User.find_by_username(member['username'])
+            if mem:
+                proj.members.append(mem)
+            else:
+                err.append(member['username'])
         proj.create_project()
 
-        return {'msg': 'Project created successfully'}, 200
+        return resp, 201
 
     @fresh_jwt_required
     def delete(self):
@@ -147,7 +158,7 @@ class ProjectAllocate(Resource):
         data = ProjectAllocate.parser.parse_args()
         proj = Project.find_by_project_id(data['project_id'])
         user = User.find_by_id(data['user_id'])
-       
+
         if not user:
             return {'msg': 'User not found'}, 404
         if not proj:
@@ -155,7 +166,7 @@ class ProjectAllocate(Resource):
         if logged_in_user.has_project(proj):
             proj.members.append(user)
             proj.create_project()
-            return {'msg': 'Member added to project'}, 200
+            return {'msg': 'Members added to project'}, 200
         # Project(id=None, **data, owner=user).create_project()
         return {'msg': 'Project not found in your account'}, 404
 
