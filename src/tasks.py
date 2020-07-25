@@ -1,5 +1,7 @@
 from flask_restful import Resource, reqparse
 from flask_jwt_extended import jwt_required, get_jwt_identity
+from src.projects import Project
+from src.user import User
 from src.utility import TaskStatus
 from src.db import db
 
@@ -26,10 +28,10 @@ class Task(db.Model):
         """
         self.id = id
         self.subject = subject
-        self.status = status
         self.description = description
         self.project_id = project_id
         self.user_id = user_id
+        self.status = Task.validateStatus(status)
 
     @ classmethod
     def find_by_taskID(cls, tID):
@@ -52,6 +54,23 @@ class Task(db.Model):
                 'user_id': self.user_id,
                 }
 
+    @classmethod
+    def validateStatus(cls, status):
+        """ To prevent status values to go beyond 0-3, if 
+        so task status has defalut value 0
+
+        Args:
+            status ([int]): [status]
+
+        Returns:
+            [int]: [valid status]
+        """
+        if status < 0:
+            status = 0
+        if status > 3:
+            status = 3
+        return status
+
 
 class TaskRes(Resource):
     parser = reqparse.RequestParser()
@@ -59,7 +78,7 @@ class TaskRes(Resource):
                         help='Subject Required')
     parser.add_argument('description', type=str, required=True,
                         help='Task description Required')
-    parser.add_argument('status', type=str, required=True,
+    parser.add_argument('status', type=int, required=True,
                         help='Status Required')
     parser.add_argument('project_id', type=int, required=True,
                         help='Project ID Required')
@@ -112,12 +131,16 @@ class TaskRes(Resource):
 
     @jwt_required
     def post(self):
+        logged_in_user_id = get_jwt_identity()
+        logged_in_user = User.find_by_id(logged_in_user_id)
         data = TaskRes.parser.parse_args()
+        proj = Project.find_by_project_id(data['project_id'])
         # if Task.find_by_taskID(data['id']):
         #     return {'msg': 'Duplicate task'}, 400
-
-        Task(**data).save_to_db()
-        return {'msg': 'Task created successfully'}, 200
+        if proj and logged_in_user.has_project(proj):
+            Task(**data).save_to_db()
+            return {'msg': 'Task created successfully'}, 200
+        return {'msg': 'No such project found in your account'}
 
     @jwt_required
     def put(self):
@@ -130,7 +153,8 @@ class TaskRes(Resource):
         if tsk:
             tsk.subject = data['subject']
             tsk.description = data['description']
-            tsk.status = data['status']
+
+            tsk.status = Task.validateStatus(data['status'])
             tsk.save_to_db()
             return {'msg': 'Status updated successfully'}, 200
 
