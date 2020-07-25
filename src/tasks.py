@@ -54,7 +54,7 @@ class Task(db.Model):
                 'status': self.status,
                 'project_id': self.project_id,
                 'assigned_user': username,
-                # 'assigned_user_id': self.user_id,
+                'user_id': self.user_id,
                 }
 
     @classmethod
