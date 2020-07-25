@@ -70,7 +70,7 @@ class ProjectRes(Resource):
                         help='Project Name Required')
     parser.add_argument('project_desc', type=str, required=True,
                         help='Project Description Required')
-    parser.add_argument('project_members', type=dict, required=True,
+    parser.add_argument('project_members', type=dict, required=False,
                         action="append", help='Project Members are Required')
 
     @jwt_optional
@@ -111,12 +111,13 @@ class ProjectRes(Resource):
         proj.members.append(User.find_by_id(user))
         err = []
         resp = {'msg': 'Project created successfully', 'err': err}
-        for member in data['project_members']:
-            mem = User.find_by_username(member['username'])
-            if mem:
-                proj.members.append(mem)
-            else:
-                err.append(member['username'])
+        if data['project_members']:
+            for member in data['project_members']:
+                mem = User.find_by_username(member['username'])
+                if mem:
+                    proj.members.append(mem)
+                else:
+                    err.append(member['username'])
         proj.create_project()
 
         return resp, 201

@@ -46,12 +46,15 @@ class Task(db.Model):
         db.session.commit()
 
     def json(self):
+        user = User.find_by_id(self.user_id)
+        username = user.basicDetails()['username'] if user else None
         return {'id': self.id,
                 'subject': self.subject,
                 'description': self.description,
                 'status': self.status,
                 'project_id': self.project_id,
-                'user_id': self.user_id,
+                'assigned_user': username,
+                # 'assigned_user_id': self.user_id,
                 }
 
     @classmethod
@@ -91,56 +94,59 @@ class TaskRes(Resource):
         parser.add_argument('project_id', type=int, required=True,
                             help='Project ID Required')
         data = parser.parse_args()
-        current_user = get_jwt_identity()
-        shared_filter = {'user_id': current_user,
-                         'project_id': data['project_id']}
-        resp = {}
-        tsks = []
-        for task in Task.query.filter_by(status=TaskStatus.BLOCKED,
-                                         **shared_filter):
-            tsks.append(
-                task.json()
-            )
-        resp['blocked'] = tsks
+        logged_in_user_id = get_jwt_identity()
+        logged_in_user = User.find_by_id(logged_in_user_id)
+        proj = Project.find_by_project_id(data['project_id'])
+        shared_filter = {'project_id': data['project_id']}
 
-        tsks = []
-        for task in Task.query.filter_by(status=TaskStatus.TODO,
-                                         **shared_filter):
-            tsks.append(
-                task.json()
-            )
-        resp['to_do'] = tsks
+        if logged_in_user.has_project(proj):
+            resp = {}
+            tsks = []
+            for task in Task.query.filter_by(status=TaskStatus.BLOCKED,
+                                             **shared_filter):
+                tsks.append(
+                    task.json()
+                )
+            resp['blocked'] = tsks
 
-        tsks = []
-        for task in Task.query.filter_by(status=TaskStatus.INPROGRESS,
-                                         **shared_filter):
-            tsks.append(
-                task.json()
-            )
-        resp['in_progress'] = tsks
+            tsks = []
+            for task in Task.query.filter_by(status=TaskStatus.TODO,
+                                             **shared_filter):
+                tsks.append(
+                    task.json()
+                )
+            resp['to_do'] = tsks
 
-        tsks = []
-        for task in Task.query.filter_by(status=TaskStatus.DONE,
-                                         **shared_filter):
-            tsks.append(
-                task.json()
-            )
+            tsks = []
+            for task in Task.query.filter_by(status=TaskStatus.INPROGRESS,
+                                             **shared_filter):
+                tsks.append(
+                    task.json()
+                )
+            resp['in_progress'] = tsks
 
-        resp['done'] = tsks
-        return resp, 200
+            tsks = []
+            for task in Task.query.filter_by(status=TaskStatus.DONE,
+                                             **shared_filter):
+                tsks.append(
+                    task.json()
+                )
+            resp['done'] = tsks
+            return resp, 200
+        return {'msg': 'No such project found in your account'}, 404
 
     @jwt_required
     def post(self):
+        data = TaskRes.parser.parse_args()
         logged_in_user_id = get_jwt_identity()
         logged_in_user = User.find_by_id(logged_in_user_id)
-        data = TaskRes.parser.parse_args()
         proj = Project.find_by_project_id(data['project_id'])
         # if Task.find_by_taskID(data['id']):
         #     return {'msg': 'Duplicate task'}, 400
         if proj and logged_in_user.has_project(proj):
             Task(**data).save_to_db()
             return {'msg': 'Task created successfully'}, 200
-        return {'msg': 'No such project found in your account'}
+        return {'msg': 'No such project found in your account'}, 404
 
     @jwt_required
     def put(self):
