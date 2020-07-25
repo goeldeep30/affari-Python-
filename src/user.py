@@ -121,7 +121,7 @@ class UserRegisterRes(Resource):
     def get(self):
         claims = get_jwt_claims()
         if not claims['admin']:
-            return {'msg': 'Admin rights needed'}, 401
+            return {'msg': 'Admin rights needed'}, 403
 
         usrs = []
         for user in User.query.all():
@@ -157,7 +157,7 @@ class UserRegisterRes(Resource):
     def delete(self):
         claims = get_jwt_claims()
         if not claims['admin']:
-            return {'msg': 'Admin rights needed'}, 401
+            return {'msg': 'Admin rights needed'}, 403
 
         parser = reqparse.RequestParser()
         parser.add_argument('username', type=str, required=True,

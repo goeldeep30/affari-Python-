@@ -100,7 +100,7 @@ class ProjectRes(Resource):
         user = get_jwt_identity()
         # claims = get_jwt_claims()
         # if not claims['manager']:
-        #     return {'msg': 'Manager rights needed'}, 401
+        #     return {'msg': 'Manager rights needed'}, 403
 
         data = ProjectRes.parser.parse_args()
         print(data['project_members'])
@@ -126,7 +126,7 @@ class ProjectRes(Resource):
     def delete(self):
         claims = get_jwt_claims()
         if not claims['admin']:
-            return {'msg': 'Admin rights needed'}, 401
+            return {'msg': 'Admin rights needed'}, 403
 
         parser = reqparse.RequestParser()
         parser.add_argument('id', type=str, required=True,
@@ -154,7 +154,7 @@ class ProjectAllocate(Resource):
         logged_in_user = User.find_by_id(logged_in_user_id)
         # claims = get_jwt_claims()
         # if not claims['manager']:
-        #     return {'msg': 'Manager rights needed'}, 401
+        #     return {'msg': 'Manager rights needed'}, 403
 
         data = ProjectAllocate.parser.parse_args()
         proj = Project.find_by_project_id(data['project_id'])
