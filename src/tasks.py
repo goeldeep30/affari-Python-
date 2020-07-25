@@ -159,8 +159,8 @@ class TaskRes(Resource):
         if tsk:
             tsk.subject = data['subject']
             tsk.description = data['description']
-
             tsk.status = Task.validateStatus(data['status'])
+            tsk.user_id = data['user_id']
             tsk.save_to_db()
             return {'msg': 'Status updated successfully'}, 200
 
