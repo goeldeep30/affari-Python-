@@ -16,6 +16,7 @@ class User(db.Model):
     password = db.Column(db.String(80))
     access_level = db.Column(db.Integer)
     task = db.relationship("Task", lazy='dynamic')
+    owns_projects = db.relationship("Project", backref='owner', lazy='dynamic')
     # curr_projects = db.relationship("Project", secondary=proj_allocation,
     #                          backref='members', lazy='dynamic')
 
