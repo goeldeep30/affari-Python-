@@ -16,6 +16,7 @@ class User(db.Model):
     password = db.Column(db.String(80))
     access_level = db.Column(db.Integer)
     task = db.relationship("Task", lazy='dynamic')
+    owns_projects = db.relationship("Project", backref='owner', lazy='dynamic')
     # curr_projects = db.relationship("Project", secondary=proj_allocation,
     #                          backref='members', lazy='dynamic')
 
@@ -121,7 +122,7 @@ class UserRegisterRes(Resource):
     def get(self):
         claims = get_jwt_claims()
         if not claims['admin']:
-            return {'msg': 'Admin rights needed'}, 401
+            return {'msg': 'Admin rights needed'}, 403
 
         usrs = []
         for user in User.query.all():
@@ -157,7 +158,7 @@ class UserRegisterRes(Resource):
     def delete(self):
         claims = get_jwt_claims()
         if not claims['admin']:
-            return {'msg': 'Admin rights needed'}, 401
+            return {'msg': 'Admin rights needed'}, 403
 
         parser = reqparse.RequestParser()
         parser.add_argument('username', type=str, required=True,

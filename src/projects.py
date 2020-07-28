@@ -4,6 +4,7 @@ from flask_jwt_extended import (jwt_optional, get_jwt_identity,
                                 get_jwt_claims)
 from src.user import User
 from src.db import db
+from typing import List
 
 
 proj_allocation = db.Table('proj_allocation',
@@ -11,6 +12,8 @@ proj_allocation = db.Table('proj_allocation',
                                      db.ForeignKey('users.id')),
                            db.Column('project_id', db.Integer,
                                      db.ForeignKey('projects.id')),
+                           db.UniqueConstraint('user_id', 'project_id',
+                                               name='UC_UID_PID')
                            )
 
 
@@ -19,7 +22,7 @@ class Project(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     project_name = db.Column(db.String(80))
     project_desc = db.Column(db.String(80))
-    # owner = db.Column(db.Integer, db.ForeignKey('users.id'))
+    owner_id = db.Column(db.Integer, db.ForeignKey('users.id'))
     task = db.relationship("Task", lazy='dynamic')
     members = db.relationship("User", secondary=proj_allocation,
                               backref=db.backref('curr_projects',
@@ -31,7 +34,7 @@ class Project(db.Model):
         self.id = id
         self.project_name = project_name
         self.project_desc = project_desc
-        # self.owner = owner
+        self.owner_id = owner
 
     @classmethod
     def find_by_project_id(cls, project_id):
@@ -58,10 +61,28 @@ class Project(db.Model):
         return {'id': self.id,
                 'project_name': self.project_name,
                 'project_desc': self.project_desc,
-                # 'owner': self.owner,
+                'owner_id': self.owner_id,
                 # 'members': [usr.json() for usr in self.members],
                 # 'task': [tsk.json() for tsk in self.task.all()]
                 }
+
+    def editMembers(self, members: List):
+        original_users = self.members
+        updated_users = []
+        for mem in members:
+            uname = mem['username']
+            mem = User.find_by_username(uname)
+            if mem:
+                updated_users.append(mem)
+
+        updated_users.append(self.owner)
+        # Above line is to prevent owner to to lose ownership
+        deleted_members = set(original_users) - set(updated_users)
+        new_members = set(updated_users) - set(original_users)
+        for member in deleted_members:
+            self.members.remove(member)
+        for member in new_members:
+            self.members.append(member)
 
 
 class ProjectRes(Resource):
@@ -100,7 +121,7 @@ class ProjectRes(Resource):
         user = get_jwt_identity()
         # claims = get_jwt_claims()
         # if not claims['manager']:
-        #     return {'msg': 'Manager rights needed'}, 401
+        #     return {'msg': 'Manager rights needed'}, 403
 
         data = ProjectRes.parser.parse_args()
         print(data['project_members'])
@@ -123,10 +144,30 @@ class ProjectRes(Resource):
         return resp, 201
 
     @fresh_jwt_required
+    def put(self):
+        logged_in_user_id = get_jwt_identity()
+        logged_in_user = User.find_by_id(logged_in_user_id)
+        parser = reqparse.RequestParser()
+        parser.add_argument('id', type=str, required=True,
+                            help='Project ID Required')
+        parser.add_argument('project_desc', type=str, required=True,
+                            help='Project Description Required')
+        parser.add_argument('project_members', type=dict, required=False,
+                            action="append", help='Project Members are Required')
+        data = parser.parse_args()
+        project = Project.find_by_project_id(data['id'])
+        if project and logged_in_user.has_project(project):
+            project.editMembers(data['project_members'])
+            project.project_desc = data['project_desc']
+            project.create_project()
+            return {'msg': 'Project updated successfully'}, 200
+        return {'msg': 'No such project found in your account'}, 404
+
+    @fresh_jwt_required
     def delete(self):
         claims = get_jwt_claims()
         if not claims['admin']:
-            return {'msg': 'Admin rights needed'}, 401
+            return {'msg': 'Admin rights needed'}, 403
 
         parser = reqparse.RequestParser()
         parser.add_argument('id', type=str, required=True,
@@ -138,7 +179,7 @@ class ProjectRes(Resource):
             project.delete_project()
             return {'msg': 'Project deleted successfully'}, 200
 
-        return {'msg': 'No such project found'}, 404
+        return {'msg': 'No such project found in your account'}, 404
 
 
 class ProjectAllocate(Resource):
@@ -154,7 +195,7 @@ class ProjectAllocate(Resource):
         logged_in_user = User.find_by_id(logged_in_user_id)
         # claims = get_jwt_claims()
         # if not claims['manager']:
-        #     return {'msg': 'Manager rights needed'}, 401
+        #     return {'msg': 'Manager rights needed'}, 403
 
         data = ProjectAllocate.parser.parse_args()
         proj = Project.find_by_project_id(data['project_id'])

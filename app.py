@@ -87,7 +87,7 @@ def non_fresh_token_callback():
     return {
         'msg': 'Fresh token required for verification',
         'err': 'NEED_FRESH_TOKEN_ERR'
-    }, 401
+    }, 403
 
 
 @jwt.revoked_token_loader
