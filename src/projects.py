@@ -23,7 +23,7 @@ class Project(db.Model):
     project_name = db.Column(db.String(80))
     project_desc = db.Column(db.String(80))
     owner_id = db.Column(db.Integer, db.ForeignKey('users.id'))
-    task = db.relationship("Task", lazy='dynamic')
+    task = db.relationship("Task", backref="project", lazy='dynamic')
     members = db.relationship("User", secondary=proj_allocation,
                               backref=db.backref('curr_projects',
                                                  lazy='dynamic')
