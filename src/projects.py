@@ -61,7 +61,7 @@ class Project(db.Model):
         return {'id': self.id,
                 'project_name': self.project_name,
                 'project_desc': self.project_desc,
-                'owner_id': self.owner_id,
+                'owner': self.owner.basicDetails()['username'],
                 # 'members': [usr.json() for usr in self.members],
                 # 'task': [tsk.json() for tsk in self.task.all()]
                 }
@@ -69,13 +69,15 @@ class Project(db.Model):
     def editMembers(self, members: List):
         original_users = self.members
         updated_users = []
+        if not members:
+            return
         for mem in members:
             uname = mem['username']
             mem = User.find_by_username(uname)
             if mem:
                 updated_users.append(mem)
-
-        updated_users.append(self.owner)
+        if self.owner not in updated_users:
+            updated_users.append(self.owner)
         # Above line is to prevent owner to to lose ownership
         deleted_members = set(original_users) - set(updated_users)
         new_members = set(updated_users) - set(original_users)
@@ -156,7 +158,9 @@ class ProjectRes(Resource):
                             action="append", help='Project Members are Required')
         data = parser.parse_args()
         project = Project.find_by_project_id(data['id'])
-        if project and logged_in_user.has_project(project):
+        if project:
+            if logged_in_user is not project.owner:
+                return {'msg': 'You can not update this project'}, 403
             project.editMembers(data['project_members'])
             project.project_desc = data['project_desc']
             project.create_project()
@@ -165,9 +169,11 @@ class ProjectRes(Resource):
 
     @fresh_jwt_required
     def delete(self):
-        claims = get_jwt_claims()
-        if not claims['admin']:
-            return {'msg': 'Admin rights needed'}, 403
+        logged_in_user_id = get_jwt_identity()
+        logged_in_user = User.find_by_id(logged_in_user_id)
+        # claims = get_jwt_claims()
+        # if not claims['admin']:
+        #     return {'msg': 'Admin rights needed'}, 403
 
         parser = reqparse.RequestParser()
         parser.add_argument('id', type=str, required=True,
@@ -175,10 +181,11 @@ class ProjectRes(Resource):
         data = parser.parse_args()
 
         project = Project.find_by_project_id(data['id'])
+        if logged_in_user is not project.owner:
+            return {'msg': 'You can not delete this project'}, 403
         if project:
             project.delete_project()
             return {'msg': 'Project deleted successfully'}, 200
-
         return {'msg': 'No such project found in your account'}, 404
 
 

@@ -156,11 +156,14 @@ class TaskRes(Resource):
     def put(self):
         TaskRes.parser.add_argument('id', type=str, required=True,
                                     help='ID Required')
+        TaskRes.parser.remove_argument('project_id')
         data = TaskRes.parser.parse_args()
         TaskRes.parser.remove_argument('id')
+        TaskRes.parser.add_argument('project_id', type=int, required=True,
+                                    help='Project ID Required')
+
         logged_in_user_id = get_jwt_identity()
         logged_in_user = User.find_by_id(logged_in_user_id)
-        # proj = Project.find_by_project_id(data['project_id'])
         assigned_user = User.find_by_id(data['user_id'])
         tsk = Task.find_by_taskID(data['id'])
         proj = tsk.project if tsk else None
