@@ -59,7 +59,7 @@ def token_in_blacklist(decrypted_token):
 def expired_token_callback(reason):
     return {
         'resp': reason,
-        'msg': 'Token has been expired',
+        'msg': 'Token has expired',
         'err': 'EXPIRED_TOKEN_ERR'
     }, 401
 
