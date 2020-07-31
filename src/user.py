@@ -183,7 +183,7 @@ class UserLoginRes(Resource):
         data = UserLoginRes.parser.parse_args()
         usr = User.find_by_username(data['username'])
         if usr and usr.password == data['password']:
-            expires = timedelta(minutes=10)
+            expires = timedelta(days=30)
             access_token = create_access_token(
                 identity=usr.id, fresh=True, expires_delta=expires)
             refresh_token = create_refresh_token(usr.id)
@@ -209,7 +209,7 @@ class TokenRefresh(Resource):
     def post(self):
 
         current_user = get_jwt_identity()
-        expires = timedelta(minutes=10)
+        expires = timedelta(days=30)
         new_token = create_access_token(
             identity=current_user, fresh=False, expires_delta=expires)
         return{
