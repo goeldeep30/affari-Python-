@@ -79,7 +79,7 @@ class TaskRes(Resource):
     parser = reqparse.RequestParser()
     parser.add_argument('subject', type=str, required=True,
                         help='Subject Required')
-    parser.add_argument('description', type=str, required=True,
+    parser.add_argument('description', type=str, required=False,
                         help='Task description Required')
     parser.add_argument('status', type=int, required=True,
                         help='Status Required')
