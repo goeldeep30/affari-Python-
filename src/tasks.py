@@ -4,6 +4,7 @@ from src.projects import Project
 from src.user import User
 from src.utility import TaskStatus
 from src.db import db
+import copy
 
 
 class Task(db.Model):
@@ -154,14 +155,10 @@ class TaskRes(Resource):
 
     @jwt_required
     def put(self):
-        TaskRes.parser.add_argument('id', type=str, required=True,
-                                    help='ID Required')
-        TaskRes.parser.remove_argument('project_id')
-        data = TaskRes.parser.parse_args()
-        TaskRes.parser.remove_argument('id')
-        TaskRes.parser.add_argument('project_id', type=int, required=True,
-                                    help='Project ID Required')
-
+        parser = copy.deepcopy(TaskRes.parser)
+        parser.add_argument('id', type=str, required=True,
+                            help='ID Required')
+        data = parser.parse_args()
         logged_in_user_id = get_jwt_identity()
         logged_in_user = User.find_by_id(logged_in_user_id)
         assigned_user = User.find_by_id(data['user_id'])
