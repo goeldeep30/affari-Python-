@@ -5,6 +5,7 @@ from src.user import User
 from src.utility import TaskStatus
 from src.db import db
 import copy
+import werkzeug
 
 
 class Task(db.Model):
@@ -17,7 +18,7 @@ class Task(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
 
     def __init__(self, subject: str, description: str, status: TaskStatus,
-                 project_id: int, user_id: int, id: int = None):
+                 project_id: int, user_id: int, id: int = None, **kwargs):
         """[summary]
 
         Args:
@@ -88,6 +89,8 @@ class TaskRes(Resource):
                         help='Project ID Required')
     parser.add_argument('user_id', type=int, required=True,
                         help='User ID Required')
+    parser.add_argument('ref_image', type=werkzeug.datastructures.FileStorage,
+                        location='files', required=False)
 
     @jwt_required
     def get(self):
@@ -150,6 +153,8 @@ class TaskRes(Resource):
                 return {'msg': 'Not a member of this project'}, 403
             if logged_in_user.has_project(proj):
                 Task(**data).save_to_db()
+                if (data['ref_image']):
+                    data['ref_image'].save("assets/Projects/" + data['ref_image'].filename)
                 return {'msg': 'Task created successfully'}, 200
         return {'msg': 'No such project found in your account'}, 404
 
@@ -173,6 +178,8 @@ class TaskRes(Resource):
                 tsk.status = Task.validateStatus(data['status'])
                 tsk.user_id = data['user_id']
                 tsk.save_to_db()
+                if (data['ref_image']):
+                    data['ref_image'].save(f"assets/Projects/{tsk.id}" + data['ref_image'].filename)
                 return {'msg': 'Task updated successfully'}, 200
         return {'msg': 'No such task found in this project'}, 404
 
