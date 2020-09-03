@@ -1,14 +1,17 @@
 import os
-from flask import Flask
+from flask import Flask, render_template
 from flask_restful import Resource, Api
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 from blacklist import BLACKLIST
+from flask_mail import Mail, Message
 
 from src.user import (UserRegisterRes, UserLoginRes,
-                      UserLogout, TokenRefresh, User)
+                      UserLogout, TokenRefresh, User, UserActivateRes,
+                      s)
 from src.tasks import TaskRes
 from src.projects import ProjectRes, ProjectAllocate, ProjectMembers
+from src.utility import UserEmailStatus
 from src.db import db
 
 # import logging
@@ -21,13 +24,23 @@ from src.db import db
 
 app = Flask(__name__)
 CORS(app)
-app.secret_key = "mySecret"
+app.secret_key = "VeryStrongSeCrE@Tk3Y,NotIdentifi@bleE@siLy"
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['PROPAGATE_EXCEPTIONS'] = True
 app.config['JWT_BLACKLIST_ENABLED'] = True
 app.config['JWT_BLACKLIST_TOKEN_CHECKS'] = ['access', 'refresh']
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL',
                                                        'sqlite:///data.db')
+app.config.update(
+    # EMAIL SETTINGS
+    MAIL_SERVER='smtp.gmail.com',
+    MAIL_PORT=465,
+    MAIL_USE_SSL=True,
+    MAIL_USERNAME='affari.deep@gmail.com',
+    MAIL_PASSWORD='Affari22@'
+)
+
+mail = Mail(app)
 api = Api(app)
 db.init_app(app)
 
@@ -103,9 +116,29 @@ class HomeRes(Resource):
         return {'msg': 'Affari is up and running'}, 200
 
 
+class SendConfirmationMailRes(Resource):
+    def get(self, user_id):
+        user = User.find_by_id(user_id, UserEmailStatus.NOTCONFIRMED)
+        if user:
+            try:
+                token = s.dumps(user_id, salt='email-confirm'),
+                msg = Message("Confirm your account!",
+                              sender='affari.deep+confirmPass@gmail.com',
+                              recipients=['affari.deep@gmail.com'])
+                msg.html = render_template('confirmationMailOutline.html',
+                                           key=token[0])
+                mail.send(msg)
+                return {'msg': 'Mail sent!'}, 200
+            except Exception as e:
+                return {'msg': str(e)}, 500
+        return {'msg': 'No such unconfirmed user'}, 
+     
+
 api.add_resource(HomeRes, '/')
+api.add_resource(SendConfirmationMailRes, '/mail/<int:user_id>')
 api.add_resource(TaskRes, '/tasks')
 api.add_resource(UserRegisterRes, '/register')
+api.add_resource(UserActivateRes, '/activate/<token>')
 api.add_resource(UserLoginRes, '/login')
 api.add_resource(UserLogout, '/logout')
 api.add_resource(ProjectRes, '/projects')

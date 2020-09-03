@@ -10,3 +10,8 @@ class TaskStatus:
     TODO = 1
     INPROGRESS = 2
     DONE = 3
+
+
+class UserEmailStatus:
+    NOTCONFIRMED = 0
+    CONFIRMED = 1

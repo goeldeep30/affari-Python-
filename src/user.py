@@ -1,12 +1,16 @@
 from blacklist import BLACKLIST
 from src.db import db
 from datetime import timedelta
-from src.utility import AccessLevel
+from src.utility import AccessLevel, UserEmailStatus
+from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadSignature
+from flask import make_response, render_template
 from flask_restful import Resource, reqparse
 from flask_jwt_extended import (create_access_token, create_refresh_token,
                                 fresh_jwt_required, get_jwt_claims,
                                 get_jwt_identity, jwt_required,
                                 get_raw_jwt, jwt_refresh_token_required)
+
+s = URLSafeTimedSerializer('Secre@tKey')
 
 
 class User(db.Model):
@@ -15,6 +19,7 @@ class User(db.Model):
     username = db.Column(db.String(80), unique=True)
     password = db.Column(db.String(80))
     access_level = db.Column(db.Integer)
+    email_confirmed = db.Column(db.Integer)
     task = db.relationship("Task", lazy='dynamic')
     owns_projects = db.relationship("Project", backref='owner', lazy='dynamic')
     # curr_projects = db.relationship("Project", secondary=proj_allocation,
@@ -23,22 +28,28 @@ class User(db.Model):
     # project = db.relationship("Project")
 
     def __init__(self, username: str, password: str,
-                 access_level: int, id: int = None):
+                 access_level: int,
+                 email_confirmed: int = UserEmailStatus.NOTCONFIRMED,
+                 id: int = None):
         self.id = id
         self.username = username
         self.password = password
         self.access_level = access_level
+        self.email_confirmed = email_confirmed
 
     def __str__(self):
         return f"{self.__dict__}"
 
     @classmethod
-    def find_by_username(cls, username):
-        return cls.query.filter_by(username=username).first()
+    def find_by_username(cls, username,
+                         email_confirmed=UserEmailStatus.CONFIRMED):
+        return cls.query.filter_by(username=username,
+                                   email_confirmed=email_confirmed).first()
 
     @classmethod
-    def find_by_id(cls, _id):
-        return cls.query.filter_by(id=_id).first()
+    def find_by_id(cls, _id, email_confirmed=1):
+        return cls.query.filter_by(id=_id,
+                                   email_confirmed=email_confirmed).first()
 
     def make_dev_user(self):
         self.access_level = AccessLevel.DEVELOPER
@@ -136,7 +147,12 @@ class UserRegisterRes(Resource):
         if User.find_by_username(data['username']):
             return {'msg': 'User already exists'}, 400
 
+        if User.find_by_username(data['username'],
+                                 UserEmailStatus.NOTCONFIRMED):
+            return {'msg': 'User already exists but Emal not confirmed'}, 403
+
         User(id=None, **data).create_update_user()
+
         return {'msg': 'User created successfully'}, 200
 
     @jwt_required
@@ -182,6 +198,8 @@ class UserLoginRes(Resource):
     def post(self):
         data = UserLoginRes.parser.parse_args()
         usr = User.find_by_username(data['username'])
+        usr_unconfirmed = User.find_by_username(data['username'],
+                                                UserEmailStatus.NOTCONFIRMED)
         if usr and usr.password == data['password']:
             expires = timedelta(days=30)
             access_token = create_access_token(
@@ -192,6 +210,9 @@ class UserLoginRes(Resource):
                 'refresh_token': refresh_token,
                 'username': usr.username
             }, 200
+        elif usr_unconfirmed and usr_unconfirmed.password == data['password']:
+            return {'msg': 'Email not confirmed'}, 401
+
         return {'msg': 'Invalid credentials'}, 401
 
 
@@ -215,3 +236,24 @@ class TokenRefresh(Resource):
         return{
             'access_token': new_token,
         }, 200
+
+
+class UserActivateRes(Resource):
+
+    def get(cls, token):
+        try:
+            user_id = s.loads(token, salt='email-confirm', max_age=24*60*60)
+            # 1 Day old signature can be verified
+            user = User.find_by_id(user_id, UserEmailStatus.NOTCONFIRMED)
+            if not user:
+                return {'msg': 'No such unconfirmed account'}, 400
+            headers = {'Content-Type': 'text/html'}
+            user.email_confirmed = UserEmailStatus.CONFIRMED
+            user.create_update_user()
+            return make_response(render_template('activatedProfileResponse.html'),
+                                 200, headers)
+        except SignatureExpired:
+            return {'msg': 'Expired token'}, 401
+        except BadSignature:
+            return {'msg': 'Bad signature'}, 400
+        return {'msg': 'Something went wrong, Try again'}, 500
