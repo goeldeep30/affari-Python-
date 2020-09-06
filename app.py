@@ -116,26 +116,26 @@ class HomeRes(Resource):
         return {'msg': 'Affari is up and running'}, 200
 
 
-class SendConfirmationMailRes(Resource):
-    def get(self, user_id):
-        user = User.find_by_id(user_id, UserEmailStatus.NOTCONFIRMED)
-        if user:
-            try:
-                token = s.dumps(user_id, salt='email-confirm'),
-                msg = Message("Confirm your account!",
-                              sender='affari.deep+confirmPass@gmail.com',
-                              recipients=['affari.deep@gmail.com'])
-                msg.html = render_template('confirmationMailOutline.html',
-                                           key=token[0])
-                mail.send(msg)
-                return {'msg': 'Mail sent!'}, 200
-            except Exception as e:
-                return {'msg': str(e)}, 500
-        return {'msg': 'No such unconfirmed user'}, 
-     
+@app.route('/mail/<string:username>')
+def SendConfirmationMailRes(username):
+    user = User.find_by_username(username, UserEmailStatus.NOTCONFIRMED)
+    if user:
+        try:
+            token = s.dumps(username, salt='email-confirm'),
+            url = 'localhost:5000/activate/' + token[0]
+            msg = Message("Confirm your account!",
+                          sender='affari.deep+confirmPass@gmail.com',
+                          recipients=[user.username])
+            msg.html = render_template('confirmationMailOutline.html',
+                                       url=url)
+            mail.send(msg)
+            return {'msg': 'Confirmation Email sent!'}, 200
+        except Exception as e:
+            return {'msg': str(e)}, 500
+    return {'msg': 'No such unconfirmed user'}, 404
+
 
 api.add_resource(HomeRes, '/')
-api.add_resource(SendConfirmationMailRes, '/mail/<int:user_id>')
 api.add_resource(TaskRes, '/tasks')
 api.add_resource(UserRegisterRes, '/register')
 api.add_resource(UserActivateRes, '/activate/<token>')

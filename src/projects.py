@@ -126,7 +126,6 @@ class ProjectRes(Resource):
         #     return {'msg': 'Manager rights needed'}, 403
 
         data = ProjectRes.parser.parse_args()
-        print(data['project_members'])
         if Project.find_by_project_name(data['project_name']):
             return {'msg': 'Project already exists'}, 400
 

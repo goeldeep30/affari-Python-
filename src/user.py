@@ -10,6 +10,9 @@ from flask_jwt_extended import (create_access_token, create_refresh_token,
                                 get_jwt_identity, jwt_required,
                                 get_raw_jwt, jwt_refresh_token_required)
 
+import requests
+from json import loads
+
 s = URLSafeTimedSerializer('Secre@tKey')
 
 
@@ -149,11 +152,13 @@ class UserRegisterRes(Resource):
 
         if User.find_by_username(data['username'],
                                  UserEmailStatus.NOTCONFIRMED):
-            return {'msg': 'User already exists but Emal not confirmed'}, 403
+            return {'msg': 'User already exists, Please Login'}, 403
 
         User(id=None, **data).create_update_user()
-
-        return {'msg': 'User created successfully'}, 200
+        mail_uri = 'http://localhost:5000/mail/' + data['username']
+        resp = requests.get(mail_uri).content
+        resp = loads(resp.decode('utf-8'))['msg']
+        return {'msg': f'User created successfully, {resp}'}, 200
 
     @jwt_required
     def put(self):
@@ -210,8 +215,11 @@ class UserLoginRes(Resource):
                 'refresh_token': refresh_token,
                 'username': usr.username
             }, 200
-        elif usr_unconfirmed and usr_unconfirmed.password == data['password']:
-            return {'msg': 'Email not confirmed'}, 401
+        elif usr_unconfirmed:
+            mail_uri = f'http://localhost:5000/mail/{usr_unconfirmed.username}'
+            resp = requests.get(mail_uri).content
+            resp = loads(resp.decode('utf-8'))['msg']
+            return {'msg': f'Email not confirmed, {resp}'}, 401
 
         return {'msg': 'Invalid credentials'}, 401
 
@@ -242,9 +250,10 @@ class UserActivateRes(Resource):
 
     def get(cls, token):
         try:
-            user_id = s.loads(token, salt='email-confirm', max_age=24*60*60)
+            username = s.loads(token, salt='email-confirm', max_age=24*60*60)
             # 1 Day old signature can be verified
-            user = User.find_by_id(user_id, UserEmailStatus.NOTCONFIRMED)
+            user = User.find_by_username(username,
+                                         UserEmailStatus.NOTCONFIRMED)
             if not user:
                 return {'msg': 'No such unconfirmed account'}, 400
             headers = {'Content-Type': 'text/html'}
