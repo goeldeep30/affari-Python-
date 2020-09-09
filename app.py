@@ -4,6 +4,7 @@ from flask_restful import Resource, Api
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 from blacklist import BLACKLIST
+from token_storage import ISSUED_CONFIRM_EMAIL_TOKEN
 from flask_mail import Mail, Message
 
 from src.user import (UserRegisterRes, UserLoginRes,
@@ -121,8 +122,11 @@ def SendConfirmationMailRes(username):
     user = User.find_by_username(username, UserEmailStatus.NOTCONFIRMED)
     if user:
         try:
-            token = s.dumps(username, salt='email-confirm'),
-            url = 'localhost:5000/activate/' + token[0]
+            token = s.dumps(username, salt='email-confirm')
+            print(token)
+            ISSUED_CONFIRM_EMAIL_TOKEN[username] = token
+
+            url = 'localhost:5000/activate/' + token
             msg = Message("Confirm your account!",
                           sender='affari.deep+confirmPass@gmail.com',
                           recipients=[user.username])

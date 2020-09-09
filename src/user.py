@@ -2,6 +2,7 @@ from blacklist import BLACKLIST
 from src.db import db
 from datetime import timedelta
 from src.utility import AccessLevel, UserEmailStatus
+from token_storage import ISSUED_CONFIRM_EMAIL_TOKEN
 from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadSignature
 from flask import make_response, render_template
 from flask_restful import Resource, reqparse
@@ -256,6 +257,8 @@ class UserActivateRes(Resource):
                                          UserEmailStatus.NOTCONFIRMED)
             if not user:
                 return {'msg': 'No such unconfirmed account'}, 400
+            if ISSUED_CONFIRM_EMAIL_TOKEN.get(username, None) != token:
+                return {'msg': 'Expired token'}, 400
             headers = {'Content-Type': 'text/html'}
             user.email_confirmed = UserEmailStatus.CONFIRMED
             user.create_update_user()
