@@ -154,7 +154,8 @@ class TaskRes(Resource):
             if logged_in_user.has_project(proj):
                 Task(**data).save_to_db()
                 if (data['ref_image']):
-                    data['ref_image'].save("assets/Projects/" + data['ref_image'].filename)
+                    data['ref_image'].save("assets/Projects/" +
+                                           data['ref_image'].filename)
                 return {'msg': 'Task created successfully'}, 200
         return {'msg': 'No such project found in your account'}, 404
 
@@ -179,7 +180,9 @@ class TaskRes(Resource):
                 tsk.user_id = data['user_id']
                 tsk.save_to_db()
                 if (data['ref_image']):
-                    data['ref_image'].save(f"assets/Projects/{tsk.id}" + data['ref_image'].filename)
+                    data['ref_image'].save(
+                        f"assets/Projects/{tsk.id}" +
+                        data['ref_image'].filename)
                 return {'msg': 'Task updated successfully'}, 200
         return {'msg': 'No such task found in this project'}, 404
 

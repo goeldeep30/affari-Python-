@@ -2,9 +2,10 @@ from blacklist import BLACKLIST
 from src.db import db
 from datetime import timedelta
 from src.utility import AccessLevel, UserEmailStatus
-from token_storage import ISSUED_CONFIRM_EMAIL_TOKEN
+from token_storage import (ISSUED_RESET_PASSWORD_EMAIL_TOKEN,
+                           ISSUED_CONFIRM_EMAIL_TOKEN)
 from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadSignature
-from flask import make_response, render_template
+from flask import make_response, render_template, url_for
 from flask_restful import Resource, reqparse
 from flask_jwt_extended import (create_access_token, create_refresh_token,
                                 fresh_jwt_required, get_jwt_claims,
@@ -156,7 +157,8 @@ class UserRegisterRes(Resource):
             return {'msg': 'User already exists, Please Login'}, 403
 
         User(id=None, **data).create_update_user()
-        mail_uri = 'http://localhost:5000/mail/' + data['username']
+        mail_uri = 'http://localhost:5000' + \
+            url_for('SendConfirmationMailRes', username=data['username'])
         resp = requests.get(mail_uri).content
         resp = loads(resp.decode('utf-8'))['msg']
         return {'msg': f'User created successfully, {resp}'}, 200
@@ -217,7 +219,10 @@ class UserLoginRes(Resource):
                 'username': usr.username
             }, 200
         elif usr_unconfirmed:
-            mail_uri = f'http://localhost:5000/mail/{usr_unconfirmed.username}'
+            mail_base_url = 'http://localhost:5000'
+            mail_uri = url_for('SendConfirmationMailRes',
+                               username=usr_unconfirmed.username)
+            mail_uri = mail_base_url + mail_uri
             resp = requests.get(mail_uri).content
             resp = loads(resp.decode('utf-8'))['msg']
             return {'msg': f'Email not confirmed, {resp}'}, 401
@@ -248,7 +253,6 @@ class TokenRefresh(Resource):
 
 
 class UserActivateRes(Resource):
-
     def get(cls, token):
         try:
             username = s.loads(token, salt='email-confirm', max_age=24*60*60)
@@ -257,13 +261,58 @@ class UserActivateRes(Resource):
                                          UserEmailStatus.NOTCONFIRMED)
             if not user:
                 return {'msg': 'No such unconfirmed account'}, 400
-            if ISSUED_CONFIRM_EMAIL_TOKEN.get(username, None) != token:
+            if ISSUED_CONFIRM_EMAIL_TOKEN.pop(username, None) != token:
                 return {'msg': 'Expired token'}, 400
             headers = {'Content-Type': 'text/html'}
             user.email_confirmed = UserEmailStatus.CONFIRMED
             user.create_update_user()
             return make_response(render_template('activatedProfileResponse.html'),
                                  200, headers)
+        except SignatureExpired:
+            return {'msg': 'Expired token'}, 401
+        except BadSignature:
+            return {'msg': 'Bad signature'}, 400
+        return {'msg': 'Something went wrong, Try again'}, 500
+
+
+class UserResetPasswordRes(Resource):
+    def get(cls, username_token):
+        try:
+            username = s.loads(username_token, salt='password-reset-email',
+                               max_age=60*60)
+            # 1 Hour old signature can be verified
+            user = User.find_by_username(username)
+            if not user:
+                return {'msg': 'No such activated account'}, 400
+            if ISSUED_RESET_PASSWORD_EMAIL_TOKEN.get(username, None) != username_token:
+                return {'msg': 'Expired token'}, 400
+            headers = {'Content-Type': 'text/html'}
+            return make_response(render_template('resetPassword.html'),
+                                 200, headers)
+        except SignatureExpired:
+            return {'msg': 'Expired token'}, 401
+        except BadSignature:
+            return {'msg': 'Bad signature'}, 400
+        return {'msg': 'Something went wrong, Try again'}, 500
+
+    def post(cls, username_token):
+        try:
+            parser = reqparse.RequestParser()
+            parser.add_argument('password', type=str, required=True,
+                                help='Password Required')
+            data = parser.parse_args()
+            username = s.loads(username_token, salt='password-reset-email',
+                               max_age=60*60)
+            password = data['password']
+            # 1 Hour old signature can be verified
+            user = User.find_by_username(username)
+            if not user:
+                return {'msg': 'No such activated account'}, 400
+            if ISSUED_RESET_PASSWORD_EMAIL_TOKEN.pop(username, None) != username_token:
+                return {'msg': 'Expired token'}, 400
+            user.password = password
+            user.create_update_user()
+            return {'msg': 'Password updated successfully'}, 200
         except SignatureExpired:
             return {'msg': 'Expired token'}, 401
         except BadSignature:

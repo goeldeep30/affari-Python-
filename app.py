@@ -4,12 +4,13 @@ from flask_restful import Resource, Api
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 from blacklist import BLACKLIST
-from token_storage import ISSUED_CONFIRM_EMAIL_TOKEN
+from token_storage import (ISSUED_CONFIRM_EMAIL_TOKEN,
+                           ISSUED_RESET_PASSWORD_EMAIL_TOKEN)
 from flask_mail import Mail, Message
 
 from src.user import (UserRegisterRes, UserLoginRes,
                       UserLogout, TokenRefresh, User, UserActivateRes,
-                      s)
+                      s, UserResetPasswordRes)
 from src.tasks import TaskRes
 from src.projects import ProjectRes, ProjectAllocate, ProjectMembers
 from src.utility import UserEmailStatus
@@ -117,32 +118,56 @@ class HomeRes(Resource):
         return {'msg': 'Affari is up and running'}, 200
 
 
-@app.route('/mail/<string:username>')
+@app.route('/confirmEmail/<string:username>')
 def SendConfirmationMailRes(username):
     user = User.find_by_username(username, UserEmailStatus.NOTCONFIRMED)
     if user:
         try:
             token = s.dumps(username, salt='email-confirm')
-            print(token)
             ISSUED_CONFIRM_EMAIL_TOKEN[username] = token
 
             url = 'localhost:5000/activate/' + token
             msg = Message("Confirm your account!",
                           sender='affari.deep+confirmPass@gmail.com',
                           recipients=[user.username])
-            msg.html = render_template('confirmationMailOutline.html',
+            msg.html = render_template('InformationMailOutline.html',
+                                       msg='To activate your account',
                                        url=url)
             mail.send(msg)
-            return {'msg': 'Confirmation Email sent!'}, 200
+            return {'msg': 'Confirmation email sent!'}, 200
         except Exception as e:
             return {'msg': str(e)}, 500
     return {'msg': 'No such unconfirmed user'}, 404
+
+
+@app.route('/resetPasswordEmail/<string:username>')
+def SendPasswordResetMailRes(username):
+    user = User.find_by_username(username)
+    if user:
+        try:
+            token = s.dumps(username, salt='password-reset-email')
+            ISSUED_RESET_PASSWORD_EMAIL_TOKEN[username] = token
+
+            url = 'localhost:5000/resetPassword/' + token
+            msg = Message("Reset your account password",
+                          sender='affari.deep+resetPass@gmail.com',
+                          recipients=[user.username])
+            msg.html = render_template('InformationMailOutline.html',
+                                       msg='To reset your account password',
+                                       url=url)
+            print(token)
+            mail.send(msg)
+            return {'msg': 'Password reset email sent!'}, 200
+        except Exception as e:
+            return {'msg': str(e)}, 500
+    return {'msg': 'No such user found'}, 404
 
 
 api.add_resource(HomeRes, '/')
 api.add_resource(TaskRes, '/tasks')
 api.add_resource(UserRegisterRes, '/register')
 api.add_resource(UserActivateRes, '/activate/<token>')
+api.add_resource(UserResetPasswordRes, '/resetPassword/<username_token>')
 api.add_resource(UserLoginRes, '/login')
 api.add_resource(UserLogout, '/logout')
 api.add_resource(ProjectRes, '/projects')
