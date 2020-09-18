@@ -157,7 +157,7 @@ class UserRegisterRes(Resource):
             return {'msg': 'User already exists, Please Login'}, 403
 
         User(id=None, **data).create_update_user()
-        mail_uri = 'http://localhost:5000' + \
+        mail_uri = 'https://affari.herokuapp.com' + \
             url_for('SendConfirmationMailRes', username=data['username'])
         resp = requests.get(mail_uri).content
         resp = loads(resp.decode('utf-8'))['msg']
@@ -219,7 +219,7 @@ class UserLoginRes(Resource):
                 'username': usr.username
             }, 200
         elif usr_unconfirmed:
-            mail_base_url = 'http://localhost:5000'
+            mail_base_url = 'https://affari.herokuapp.com'
             mail_uri = url_for('SendConfirmationMailRes',
                                username=usr_unconfirmed.username)
             mail_uri = mail_base_url + mail_uri
@@ -329,7 +329,7 @@ class UserResetPasswordEmailRes(Resource):
                             help='Username Required')
         data = parser.parse_args()
         # usr = User.find_by_username(data['username'])
-        mail_uri = 'http://localhost:5000' + \
+        mail_uri = 'https://affari.herokuapp.com' + \
             url_for('SendPasswordResetMailRes',
                     username=data['username'])
         resp = requests.get(mail_uri).content
