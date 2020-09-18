@@ -126,7 +126,7 @@ def SendConfirmationMailRes(username):
             token = s.dumps(username, salt='email-confirm')
             ISSUED_CONFIRM_EMAIL_TOKEN[username] = token
 
-            url = 'localhost:5000/activate/' + token
+            url = 'http://localhost:5000/activate/' + token
             msg = Message("Confirm your account!",
                           sender='affari.deep+confirmPass@gmail.com',
                           recipients=[user.username])
@@ -148,7 +148,7 @@ def SendPasswordResetMailRes(username):
             token = s.dumps(username, salt='password-reset-email')
             ISSUED_RESET_PASSWORD_EMAIL_TOKEN[username] = token
 
-            url = 'localhost:5000/resetPassword/' + token
+            url = 'http://localhost:5000/resetPassword/' + token
             msg = Message("Reset your account password",
                           sender='affari.deep+resetPass@gmail.com',
                           recipients=[user.username])
