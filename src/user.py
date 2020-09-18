@@ -308,6 +308,8 @@ class UserResetPasswordRes(Resource):
             user = User.find_by_username(username)
             if not user:
                 return {'msg': 'No such activated account'}, 400
+            if not password or password == '':
+                return {'msg': 'Invalid Password, Please try again'}, 400
             if ISSUED_RESET_PASSWORD_EMAIL_TOKEN.pop(username, None) != username_token:
                 return {'msg': 'Expired token'}, 400
             user.password = password
@@ -318,3 +320,18 @@ class UserResetPasswordRes(Resource):
         except BadSignature:
             return {'msg': 'Bad signature'}, 400
         return {'msg': 'Something went wrong, Try again'}, 500
+
+
+class UserResetPasswordEmailRes(Resource):
+    def post(cls):
+        parser = reqparse.RequestParser()
+        parser.add_argument('username', type=str, required=True,
+                            help='Username Required')
+        data = parser.parse_args()
+        # usr = User.find_by_username(data['username'])
+        mail_uri = 'http://localhost:5000' + \
+            url_for('SendPasswordResetMailRes',
+                    username=data['username'])
+        resp = requests.get(mail_uri).content
+        resp = loads(resp.decode('utf-8'))['msg']
+        return {'msg': f'{resp}'}, 200

@@ -10,7 +10,7 @@ from flask_mail import Mail, Message
 
 from src.user import (UserRegisterRes, UserLoginRes,
                       UserLogout, TokenRefresh, User, UserActivateRes,
-                      s, UserResetPasswordRes)
+                      s, UserResetPasswordRes, UserResetPasswordEmailRes)
 from src.tasks import TaskRes
 from src.projects import ProjectRes, ProjectAllocate, ProjectMembers
 from src.utility import UserEmailStatus
@@ -155,7 +155,7 @@ def SendPasswordResetMailRes(username):
             msg.html = render_template('InformationMailOutline.html',
                                        msg='To reset your account password',
                                        url=url)
-            print(token)
+            print(url)
             mail.send(msg)
             return {'msg': 'Password reset email sent!'}, 200
         except Exception as e:
@@ -168,6 +168,7 @@ api.add_resource(TaskRes, '/tasks')
 api.add_resource(UserRegisterRes, '/register')
 api.add_resource(UserActivateRes, '/activate/<token>')
 api.add_resource(UserResetPasswordRes, '/resetPassword/<username_token>')
+api.add_resource(UserResetPasswordEmailRes, '/sendResetPasswordEmail')
 api.add_resource(UserLoginRes, '/login')
 api.add_resource(UserLogout, '/logout')
 api.add_resource(ProjectRes, '/projects')
