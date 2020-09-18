@@ -1,9 +1,10 @@
-from flask_restful import Resource, reqparse
+from flask_restful import Resource, reqparse, request
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from src.projects import Project
 from src.user import User
 from src.utility import TaskStatus
 from src.db import db
+from src.utility import AccessLevel
 import copy
 import werkzeug
 
@@ -149,6 +150,7 @@ class TaskRes(Resource):
         # if Task.find_by_taskID(data['id']):
         #     return {'msg': 'Duplicate task'}, 400
         if proj:
+            data['id'] = None
             if (not assigned_user) or (assigned_user not in proj.members):
                 return {'msg': 'Not a member of this project'}, 403
             if logged_in_user.has_project(proj):
@@ -203,3 +205,27 @@ class TaskRes(Resource):
             tsk.delete_task()
             return {'msg': 'Task deleted successfully'}, 202
         return {'msg': 'Task not found in your account'}, 404
+
+
+class TaskBulkRes(Resource):
+    @jwt_required
+    def post(cls):
+        bb = request.get_json()
+        logged_in_user_id = get_jwt_identity()
+        logged_in_user = User.find_by_id(logged_in_user_id)
+        if logged_in_user.access_level == AccessLevel.DEVELOPER:
+            for dataS in bb['bulkData']:
+                for data in dataS:
+                    proj = Project.find_by_project_id(data['project_id'])
+                    assigned_user = User.find_by_id(data['user_id'])
+                    if proj:
+                        data['id'] = None
+                        if (not assigned_user) or (assigned_user not in proj.members):
+                            print({'msg': 'Not a member of this project'}, 403)
+                        if logged_in_user.has_project(proj):
+                            Task(**data).save_to_db()
+                            if (data.get('ref_image', None)):
+                                data['ref_image'].save("assets/Projects/" +
+                                                       data['ref_image'].filename)
+                            print({'msg': 'Task created successfully'}, 200)
+                    print({'msg': 'No such project found in your account'}, 404)

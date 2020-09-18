@@ -11,7 +11,7 @@ from flask_mail import Mail, Message
 from src.user import (UserRegisterRes, UserLoginRes,
                       UserLogout, TokenRefresh, User, UserActivateRes,
                       s, UserResetPasswordRes, UserResetPasswordEmailRes)
-from src.tasks import TaskRes
+from src.tasks import TaskRes, TaskBulkRes
 from src.projects import ProjectRes, ProjectAllocate, ProjectMembers
 from src.utility import UserEmailStatus
 from src.db import db
@@ -165,6 +165,7 @@ def SendPasswordResetMailRes(username):
 
 api.add_resource(HomeRes, '/')
 api.add_resource(TaskRes, '/tasks')
+api.add_resource(TaskBulkRes, '/tasksBulk')
 api.add_resource(UserRegisterRes, '/register')
 api.add_resource(UserActivateRes, '/activate/<token>')
 api.add_resource(UserResetPasswordRes, '/resetPassword/<username_token>')
