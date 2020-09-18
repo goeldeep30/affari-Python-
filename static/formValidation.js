@@ -1,4 +1,3 @@
-var submitStatus = true;
 var check = function() {
     if (document.getElementById('inputPassword').value ==
       document.getElementById('inputRePassword').value) {
