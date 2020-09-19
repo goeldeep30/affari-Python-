@@ -268,6 +268,7 @@ class UserActivateRes(Resource):
             headers = {'Content-Type': 'text/html'}
             user.email_confirmed = UserEmailStatus.CONFIRMED
             user.create_update_user()
+            ISSUED_CONFIRM_EMAIL_TOKEN.pop(username)
             return make_response(render_template('activatedProfileResponse.html'),
                                  200, headers)
         except SignatureExpired:
@@ -315,10 +316,11 @@ class UserResetPasswordRes(Resource):
                 return {'msg': 'No such activated account'}, 400
             if not password or password == '':
                 return {'msg': 'Invalid Password, Please try again'}, 400
-            if ISSUED_RESET_PASSWORD_EMAIL_TOKEN.pop(username, None) != username_token:
+            if ISSUED_RESET_PASSWORD_EMAIL_TOKEN.get(username, None) != username_token:
                 return {'msg': 'Expired token'}, 400
             user.password = password
             user.create_update_user()
+            ISSUED_RESET_PASSWORD_EMAIL_TOKEN.pop(username)
             return {'msg': 'Password updated successfully'}, 200
         except SignatureExpired:
             return {'msg': 'Expired token'}, 401
