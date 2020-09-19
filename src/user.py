@@ -287,6 +287,7 @@ class UserResetPasswordRes(Resource):
             if not user:
                 return {'msg': 'No such activated account'}, 400
             if ISSUED_RESET_PASSWORD_EMAIL_TOKEN.get(username, None) != username_token:
+                print(ISSUED_RESET_PASSWORD_EMAIL_TOKEN)
                 print(ISSUED_RESET_PASSWORD_EMAIL_TOKEN.get(username, None))
                 print(username_token)
                 return {'msg': 'Expired token'}, 400
