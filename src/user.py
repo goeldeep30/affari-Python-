@@ -261,7 +261,9 @@ class UserActivateRes(Resource):
                                          UserEmailStatus.NOTCONFIRMED)
             if not user:
                 return {'msg': 'No such unconfirmed account'}, 400
-            if ISSUED_CONFIRM_EMAIL_TOKEN.pop(username, None) != token:
+            if ISSUED_CONFIRM_EMAIL_TOKEN.get(username, None) != token:
+                print(ISSUED_CONFIRM_EMAIL_TOKEN.get(username, None))
+                print(token)
                 return {'msg': 'Expired token'}, 400
             headers = {'Content-Type': 'text/html'}
             user.email_confirmed = UserEmailStatus.CONFIRMED
@@ -285,6 +287,8 @@ class UserResetPasswordRes(Resource):
             if not user:
                 return {'msg': 'No such activated account'}, 400
             if ISSUED_RESET_PASSWORD_EMAIL_TOKEN.get(username, None) != username_token:
+                print(ISSUED_RESET_PASSWORD_EMAIL_TOKEN.get(username, None))
+                print(username_token)
                 return {'msg': 'Expired token'}, 400
             headers = {'Content-Type': 'text/html'}
             return make_response(render_template('resetPassword.html'),
